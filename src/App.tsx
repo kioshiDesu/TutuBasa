@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Settings, Star, ArrowLeft, ArrowRight, Plus, Trash2, Edit3, BookOpen, ChevronRight, Play, Trophy, Moon, Sun, Download } from 'lucide-react';
+import { X, Settings, Star, ArrowLeft, ArrowRight, Plus, Trash2, Edit3, BookOpen, ChevronRight, Play, Trophy, Moon, Sun, Download, Shuffle } from 'lucide-react';
 
 interface Flashcard {
   syllable: string;
@@ -30,7 +30,7 @@ const PRESET_SETS: CardSet[] = [
       { syllable: 'Nga' }, { syllable: 'Pa' }, { syllable: 'Ra' },
       { syllable: 'Sa' }, { syllable: 'Ta' }, { syllable: 'Va' },
       { syllable: 'Wa' }, { syllable: 'Ya' }, { syllable: 'Za' }
-    ],
+    ].sort((a, b) => a.syllable.localeCompare(b.syllable)),
   },
   {
     id: 'consonants-only',
@@ -62,6 +62,12 @@ const PRESET_SETS: CardSet[] = [
     cards: Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ').map(char => ({
       syllable: char
     })),
+  },
+  {
+    id: 'numbers',
+    name: 'Numbers 1-10',
+    isPreset: true,
+    cards: Array.from({length: 10}, (_, i) => ({ syllable: String(i + 1) })),
   }
 ];
 
@@ -70,12 +76,14 @@ type View = 'library' | 'study' | 'editor' | 'congrats' | 'settings';
 export default function App() {
   const [view, setView] = useState<View>('library');
   const [activeSet, setActiveSet] = useState<CardSet>(PRESET_SETS[0]);
+  const [sessionCards, setSessionCards] = useState<Flashcard[]>([]);
   const [userSets, setUserSets] = useState<CardSet[]>([]);
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [isDarkMode, setIsDarkMode] = useState(false);
   
   const [editingSet, setEditingSet] = useState<CardSet | null>(null);
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   useEffect(() => {
     const saved = localStorage.getItem('abakada_user_sets');
@@ -87,6 +95,27 @@ export default function App() {
       document.documentElement.classList.add('dark');
     }
   }, []);
+
+  const shuffleArray = (array: Flashcard[]) => {
+    const newArray = [...array];
+    for (let i = newArray.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+    }
+    return newArray;
+  };
+
+  const handleAddMoreNumbers = () => {
+    const currentMax = sessionCards.length;
+    const newCards = Array.from({length: 10}, (_, i) => ({ syllable: String(currentMax + i + 1) }));
+    setSessionCards([...sessionCards, ...newCards]);
+  };
+
+  const handleShuffle = () => {
+    setSessionCards(shuffleArray(sessionCards));
+    setCurrentIndex(0);
+    setDirection(0);
+  };
 
   const toggleDarkMode = () => {
     const newMode = !isDarkMode;
@@ -112,6 +141,7 @@ export default function App() {
 
   const handleStartStudy = (set: CardSet) => {
     setActiveSet(set);
+    setSessionCards([...set.cards]);
     setCurrentIndex(0);
     setView('study');
   };
@@ -132,10 +162,15 @@ export default function App() {
   };
 
   const handleDeleteSet = (id: string) => {
-    if (window.confirm("Are you sure you want to delete this custom set?")) {
-      const updated = userSets.filter(s => s.id !== id);
+    setConfirmDeleteId(id);
+  };
+
+  const confirmDelete = () => {
+    if (confirmDeleteId) {
+      const updated = userSets.filter(s => s.id !== confirmDeleteId);
       setUserSets(updated);
       saveToStorage(updated);
+      setConfirmDeleteId(null);
     }
   };
 
@@ -165,7 +200,7 @@ export default function App() {
   };
 
   const handleNext = () => {
-    if (currentIndex < activeSet.cards.length - 1) {
+    if (currentIndex < sessionCards.length - 1) {
       setDirection(1);
       setCurrentIndex((prev) => prev + 1);
     } else {
@@ -180,10 +215,30 @@ export default function App() {
     }
   };
 
-  const progress = activeSet.cards.length > 0 ? ((currentIndex + 1) / activeSet.cards.length) * 100 : 0;
+  const progress = sessionCards.length > 0 ? ((currentIndex + 1) / sessionCards.length) * 100 : 0;
+
+  const cardVariants = {
+    enter: (direction: number) => ({
+      x: direction > 0 ? 300 : direction < 0 ? -300 : 0,
+      opacity: 0,
+      scale: 0.9,
+    }),
+    center: {
+      zIndex: 1,
+      x: 0,
+      opacity: 1,
+      scale: 1,
+    },
+    exit: (direction: number) => ({
+      zIndex: 0,
+      x: direction < 0 ? 300 : direction > 0 ? -300 : 0,
+      opacity: 0,
+      scale: 0.9,
+    }),
+  };
 
   return (
-    <div className="flex flex-col h-screen max-w-full overflow-hidden bg-background transition-colors duration-300">
+    <div className={`flex flex-col h-screen max-w-full overflow-hidden bg-background transition-colors duration-300 ${isDarkMode ? 'dark' : ''}`}>
       <AnimatePresence mode="wait">
         {view === 'library' && (
           <motion.div 
@@ -269,12 +324,29 @@ export default function App() {
                         >
                           <Edit3 size={18} />
                         </button>
-                        <button 
-                          onClick={(e) => { e.stopPropagation(); handleDeleteSet(set.id); }}
-                          className="h-10 w-10 bg-surface-container rounded-lg flex items-center justify-center hover:bg-error-container text-on-surface hover:text-on-error-container active-press"
-                        >
-                          <Trash2 size={18} />
-                        </button>
+                        {confirmDeleteId === set.id ? (
+                          <div className="flex gap-1">
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(null); }}
+                              className="px-2 h-10 bg-surface-variant text-on-surface-variant rounded-lg flex items-center justify-center font-bold text-sm"
+                            >
+                              Cancel
+                            </button>
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); confirmDelete(); }}
+                              className="px-2 h-10 bg-error text-white rounded-lg flex items-center justify-center font-bold text-sm"
+                            >
+                              Delete
+                            </button>
+                          </div>
+                        ) : (
+                          <button 
+                            onClick={(e) => { e.stopPropagation(); handleDeleteSet(set.id); }}
+                            className="h-10 w-10 bg-surface-container rounded-lg flex items-center justify-center hover:bg-error-container text-on-surface hover:text-on-error-container active-press"
+                          >
+                            <Trash2 size={18} />
+                          </button>
+                        )}
                       </div>
                     </div>
                   ))}
@@ -303,14 +375,19 @@ export default function App() {
             <header className="flex justify-between items-center px-6 py-4 border-b-4 border-surface-container bg-surface-container-lowest z-50">
               <button 
                 onClick={() => setView('library')}
-                className="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-surface-container active-press"
+                className="h-8 w-8 shrink-0 flex items-center justify-center rounded-full bg-surface-container active-press"
               >
-                <X size={20} />
+                <X size={16} />
               </button>
-              <div className="absolute left-1/2 transform -translate-x-1/2 w-2/3 text-center">
+              <div className="absolute left-1/2 transform -translate-x-1/2 w-1/3 text-center">
                 <span className="font-black text-xl text-yellow-500 truncate block">{activeSet.name}</span>
               </div>
-              <div className="w-12 h-12" />
+              <button 
+                onClick={handleShuffle}
+                className="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-secondary-fixed text-on-secondary-container active-press"
+              >
+                <Shuffle size={20} />
+              </button>
             </header>
 
             <main className="flex-1 flex flex-col items-center justify-center px-6 py-8 overflow-hidden relative">
@@ -329,44 +406,57 @@ export default function App() {
                   </motion.div>
                 </div>
                 <span className="font-bold text-on-surface-variant whitespace-nowrap">
-                  {currentIndex + 1} / {activeSet.cards.length}
+                  {currentIndex + 1} / {sessionCards.length}
                 </span>
               </div>
 
               <div className="w-full max-w-[500px] relative h-[420px] sm:h-[450px] flex items-center justify-center">
-                <AnimatePresence mode="popLayout" custom={direction}>
+                <AnimatePresence mode="popLayout" custom={direction} initial={false}>
                   <motion.div
-                    key={currentIndex}
+                    key={`${currentIndex}-${sessionCards[currentIndex]?.syllable}`}
                     custom={direction}
-                    initial={{ x: direction > 0 ? 300 : -300, opacity: 0, scale: 0.9 }}
-                    animate={{ x: 0, opacity: 1, scale: 1 }}
-                    exit={{ x: direction < 0 ? 300 : -300, opacity: 0, scale: 0.9 }}
-                    transition={{ type: "spring", stiffness: 300, damping: 25 }}
+                    variants={cardVariants}
+                    initial="enter"
+                    animate="center"
+                    exit="exit"
+                    transition={{
+                      x: { type: "spring", stiffness: 300, damping: 30 },
+                      opacity: { duration: 0.2 }
+                    }}
                     className="w-full h-full bg-surface-container-lowest rounded-[40px] border-4 border-surface-variant chunky-shadow-card flex flex-col items-center justify-center p-8 text-center"
                   >
                     <h1 className="text-[140px] sm:text-[180px] leading-none font-black tracking-tighter text-on-surface">
-                      {activeSet.cards[currentIndex]?.syllable}
+                      {sessionCards[currentIndex]?.syllable}
                     </h1>
                   </motion.div>
                 </AnimatePresence>
               </div>
             </main>
 
-            <footer className="px-6 py-6 pb-12 flex gap-4 max-w-[500px] mx-auto w-full">
-              <button
-                onClick={handleBack}
-                disabled={currentIndex === 0}
-                className={`flex-1 h-16 rounded-2xl flex items-center justify-center gap-2 font-black text-xl border-4 active-press transition-all
-                  ${currentIndex === 0 ? 'bg-surface-container-low text-on-surface-variant opacity-50' : 'bg-surface-container shadow-[0_4px_0_0_theme(colors.surface-variant)]'}`}
-              >
-                <ArrowLeft size={24} strokeWidth={3} /> Back
-              </button>
-              <button
-                onClick={handleNext}
-                className={`flex-1 h-16 rounded-2xl flex items-center justify-center gap-2 font-black text-xl border-4 active-press transition-all bg-tertiary-container text-on-tertiary-container border-tertiary-fixed-dim shadow-[0_4px_0_0_theme(colors.tertiary-fixed-dim)] hover:brightness-105`}
-              >
-                {currentIndex === activeSet.cards.length - 1 ? 'Finish' : 'Next'} <ArrowRight size={24} strokeWidth={3} />
-              </button>
+            <footer className="px-6 py-6 pb-12 flex flex-col gap-4 max-w-[500px] mx-auto w-full">
+              <div className="flex gap-4 w-full">
+                <button
+                  onClick={handleBack}
+                  disabled={currentIndex === 0}
+                  className={`flex-1 h-16 rounded-2xl flex items-center justify-center gap-2 font-black text-xl border-4 active-press transition-all
+                    ${currentIndex === 0 ? 'bg-surface-container-low text-on-surface-variant opacity-50' : 'bg-surface-container shadow-[0_4px_0_0_theme(colors.surface-variant)]'}`}
+                >
+                  <ArrowLeft size={24} strokeWidth={3} /> Back
+                </button>
+                <button
+                  onClick={handleNext}
+                  className={`flex-1 h-16 rounded-2xl flex items-center justify-center gap-2 font-black text-xl border-4 active-press transition-all bg-tertiary-container text-on-tertiary-container border-tertiary-fixed-dim shadow-[0_4px_0_0_theme(colors.tertiary-fixed-dim)] hover:brightness-105`}
+                >
+                  {currentIndex === sessionCards.length - 1 ? 'Finish' : 'Next'} <ArrowRight size={24} strokeWidth={3} />
+                </button>
+              </div>
+              {activeSet.id === 'numbers' && (
+                <div className="flex justify-center mt-2">
+                  <button onClick={handleAddMoreNumbers} className="px-6 py-3 bg-surface-container-low text-on-surface-variant hover:text-on-surface rounded-full text-sm font-bold border-2 border-surface-variant border-dashed hover:bg-surface-variant transition-colors active-press flex items-center gap-2">
+                    <Plus size={16} /> Add 10 More Numbers
+                  </button>
+                </div>
+              )}
             </footer>
           </motion.div>
         )}
