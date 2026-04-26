@@ -5,7 +5,7 @@
 
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Settings, Star, ArrowLeft, ArrowRight, Plus, Trash2, Edit3, BookOpen, ChevronRight, Play, Trophy, Moon, Sun, Download, Shuffle } from 'lucide-react';
+import { X, Settings, Star, ArrowLeft, ArrowRight, Plus, Trash2, Edit3, BookOpen, ChevronRight, Play, Trophy, Moon, Sun, Shuffle } from 'lucide-react';
 
 interface Flashcard {
   syllable: string;
@@ -21,7 +21,7 @@ interface CardSet {
 const PRESET_SETS: CardSet[] = [
   {
     id: 'abakada-phonetic',
-    name: 'Abakada (Consonants)',
+    name: 'ABAKADA',
     isPreset: true,
     cards: [
       { syllable: 'Ba' }, { syllable: 'Da' }, { syllable: 'Fa' },
@@ -34,7 +34,7 @@ const PRESET_SETS: CardSet[] = [
   },
   {
     id: 'consonants-only',
-    name: 'Just Consonants',
+    name: 'Consonants',
     isPreset: true,
     cards: [
       { syllable: 'B' }, { syllable: 'C' }, { syllable: 'D' },
@@ -48,7 +48,7 @@ const PRESET_SETS: CardSet[] = [
   },
   {
     id: 'vowels',
-    name: 'Vowels (Patinig)',
+    name: 'Vowels',
     isPreset: true,
     cards: [
       { syllable: 'A' }, { syllable: 'E' }, { syllable: 'I' },
@@ -57,7 +57,7 @@ const PRESET_SETS: CardSet[] = [
   },
   {
     id: 'abc-eng',
-    name: 'English ABCs',
+    name: 'ABC\'s',
     isPreset: true,
     cards: Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ').map(char => ({
       syllable: char
@@ -65,7 +65,7 @@ const PRESET_SETS: CardSet[] = [
   },
   {
     id: 'numbers',
-    name: 'Numbers 1-10',
+    name: 'Numbers',
     isPreset: true,
     cards: Array.from({length: 10}, (_, i) => ({ syllable: String(i + 1) })),
   }
@@ -129,14 +129,78 @@ export default function App() {
     localStorage.setItem('abakada_user_sets', JSON.stringify(sets));
   };
 
-  const handleExport = () => {
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(userSets, null, 2));
-    const downloadAnchorNode = document.createElement('a');
-    downloadAnchorNode.setAttribute("href",     dataStr);
-    downloadAnchorNode.setAttribute("download", "abakada_custom_sets.json");
-    document.body.appendChild(downloadAnchorNode);
-    downloadAnchorNode.click();
-    downloadAnchorNode.remove();
+  const playClickSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(600, ctx.currentTime);
+      osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.1);
+      gain.gain.setValueAtTime(0.05, ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start();
+      osc.stop(ctx.currentTime + 0.1);
+    } catch (e) {
+      // Ignore
+    }
+  };
+
+  const playCompletionSound = () => {
+    try {
+      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
+      if (!AudioCtx) return;
+      const ctx = new AudioCtx();
+      const playNote = (freq: number, startTime: number, duration: number) => {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(0.1, startTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(startTime);
+        osc.stop(startTime + duration);
+      };
+      
+      const now = ctx.currentTime;
+      playNote(523.25, now, 0.15); // C5
+      playNote(659.25, now + 0.15, 0.15); // E5
+      playNote(783.99, now + 0.3, 0.15); // G5
+      playNote(1046.50, now + 0.45, 0.5); // C6
+    } catch (e) {
+      // Ignore
+    }
+  };
+
+  useEffect(() => {
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      const btn = target.closest('button');
+      if (btn) {
+        if (btn.classList.contains('finish-btn')) {
+          playCompletionSound();
+        } else {
+          playClickSound();
+        }
+      }
+    };
+    document.addEventListener('click', handleGlobalClick);
+    return () => document.removeEventListener('click', handleGlobalClick);
+  }, []);
+
+  const getFontSizeClass = (text: string) => {
+    const len = text?.length || 0;
+    if (len <= 2) return "text-[140px] sm:text-[180px]";
+    if (len <= 4) return "text-[100px] sm:text-[130px]";
+    if (len <= 6) return "text-[70px] sm:text-[90px]";
+    if (len <= 10) return "text-[50px] sm:text-[60px]";
+    return "text-[32px] sm:text-[40px] break-words";
   };
 
   const handleStartStudy = (set: CardSet) => {
@@ -423,9 +487,9 @@ export default function App() {
                       x: { type: "spring", stiffness: 300, damping: 30 },
                       opacity: { duration: 0.2 }
                     }}
-                    className="w-full h-full bg-surface-container-lowest rounded-[40px] border-4 border-surface-variant chunky-shadow-card flex flex-col items-center justify-center p-8 text-center"
+                    className="w-full h-full bg-surface-container-lowest rounded-[40px] border-4 border-surface-variant chunky-shadow-card flex flex-col items-center justify-center p-6 text-center overflow-hidden"
                   >
-                    <h1 className="text-[140px] sm:text-[180px] leading-none font-black tracking-tighter text-on-surface">
+                    <h1 className={`${getFontSizeClass(sessionCards[currentIndex]?.syllable)} leading-none font-black tracking-tighter text-on-surface`}>
                       {sessionCards[currentIndex]?.syllable}
                     </h1>
                   </motion.div>
@@ -445,7 +509,7 @@ export default function App() {
                 </button>
                 <button
                   onClick={handleNext}
-                  className={`flex-1 h-16 rounded-2xl flex items-center justify-center gap-2 font-black text-xl border-4 active-press transition-all bg-tertiary-container text-on-tertiary-container border-tertiary-fixed-dim shadow-[0_4px_0_0_theme(colors.tertiary-fixed-dim)] hover:brightness-105`}
+                  className={`flex-1 h-16 rounded-2xl flex items-center justify-center gap-2 font-black text-xl border-4 active-press transition-all bg-tertiary-container text-on-tertiary-container border-tertiary-fixed-dim shadow-[0_4px_0_0_theme(colors.tertiary-fixed-dim)] hover:brightness-105 ${currentIndex === sessionCards.length - 1 ? 'finish-btn' : ''}`}
                 >
                   {currentIndex === sessionCards.length - 1 ? 'Finish' : 'Next'} <ArrowRight size={24} strokeWidth={3} />
                 </button>
@@ -546,36 +610,6 @@ export default function App() {
                         className="h-6 w-6 bg-white rounded-full shadow-md" 
                       />
                     </button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="bg-surface-container-lowest p-6 rounded-[32px] border-4 border-surface-variant chunky-shadow-card">
-                <h3 className="font-black text-sm uppercase text-on-surface-variant mb-6 tracking-wider">Data & Backup</h3>
-                
-                <div className="space-y-4">
-                  <button 
-                    onClick={handleExport}
-                    disabled={userSets.length === 0}
-                    className={`w-full flex items-center justify-between p-4 bg-background rounded-2xl border-2 border-surface-variant active-press
-                      ${userSets.length === 0 ? 'opacity-50 grayscale pointer-events-none' : ''}`}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="h-12 w-12 rounded-xl bg-tertiary-fixed-dim text-on-tertiary-fixed-variant flex items-center justify-center">
-                        <Download size={24} />
-                      </div>
-                      <div className="text-left">
-                        <span className="font-bold text-lg block">Export My Sets</span>
-                        <span className="text-xs font-bold text-on-surface-variant">Download custom sets as JSON</span>
-                      </div>
-                    </div>
-                    <ChevronRight size={20} className="text-on-surface-variant" />
-                  </button>
-
-                  <div className="p-4 bg-surface-container-low border-2 border-dashed border-surface-variant rounded-2xl text-center">
-                    <p className="text-xs font-bold text-on-surface-variant">
-                      Custom sets are saved locally in your browser.
-                    </p>
                   </div>
                 </div>
               </div>
