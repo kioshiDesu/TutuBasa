@@ -71,7 +71,7 @@ const PRESET_SETS: CardSet[] = [
   }
 ];
 
-type View = 'library' | 'study' | 'editor' | 'congrats' | 'settings';
+type View = 'library' | 'study' | 'editor' | 'congrats';
 
 export default function App() {
   const [view, setView] = useState<View>('library');
@@ -81,6 +81,8 @@ export default function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [selectedVowel, setSelectedVowel] = useState('a');
+  const [isVowelMenuOpen, setIsVowelMenuOpen] = useState(false);
   
   const [editingSet, setEditingSet] = useState<CardSet | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
@@ -204,10 +206,30 @@ export default function App() {
   };
 
   const handleStartStudy = (set: CardSet) => {
-    setActiveSet(set);
-    setSessionCards([...set.cards]);
+    let finalCards = [...set.cards];
+    
+    // Dynamic ABAKADA generation if it's the specific preset
+    if (set.id === 'abakada-phonetic') {
+      const consonants = ['B', 'D', 'F', 'G', 'H', 'K', 'L', 'M', 'N', 'Ng', 'P', 'R', 'S', 'T', 'V', 'W', 'Y', 'Z'];
+      finalCards = consonants.map(c => ({ syllable: c + selectedVowel }));
+    }
+
+    setActiveSet({ ...set, cards: finalCards });
+    setSessionCards(finalCards);
     setCurrentIndex(0);
     setView('study');
+  };
+
+  const updateAbakadaVowel = (vowel: string) => {
+    setSelectedVowel(vowel);
+    const consonants = ['B', 'D', 'F', 'G', 'H', 'K', 'L', 'M', 'N', 'Ng', 'P', 'R', 'S', 'T', 'V', 'W', 'Y', 'Z'];
+    const newCards = consonants.map(c => ({ syllable: c + vowel }));
+    
+    setSessionCards(newCards);
+    setActiveSet({ ...activeSet, cards: newCards });
+    setCurrentIndex(0);
+    setDirection(0);
+    setIsVowelMenuOpen(false);
   };
 
   const handleCreateNew = () => {
@@ -312,16 +334,16 @@ export default function App() {
             exit={{ opacity: 0, y: -20 }}
             className="flex-1 flex flex-col h-full"
           >
-            <header className="px-6 py-8 flex justify-between items-center">
+            <header className="px-6 py-10 flex justify-between items-center">
               <div>
-                <h1 className="text-3xl font-black text-yellow-500 tracking-tight">Library</h1>
-                <p className="text-on-surface-variant font-medium">Choose a set to learn</p>
+                <h1 className="text-4xl font-black text-yellow-500 tracking-tight">Library</h1>
+                <p className="text-on-surface-variant font-bold">Choose your adventure</p>
               </div>
               <button 
-                onClick={() => setView('settings')}
-                className="h-12 w-12 rounded-full bg-surface-container flex items-center justify-center active-press"
+                onClick={toggleDarkMode}
+                className="h-14 w-14 rounded-2xl bg-surface-container border-4 border-surface-variant flex items-center justify-center active-press chunky-shadow-sm transition-all"
               >
-                <Settings className="text-on-surface" size={24} />
+                {isDarkMode ? <Sun className="text-yellow-500" size={28} /> : <Moon className="text-secondary" size={28} />}
               </button>
             </header>
 
@@ -446,13 +468,59 @@ export default function App() {
               <div className="absolute left-1/2 transform -translate-x-1/2 w-1/3 text-center">
                 <span className="font-black text-xl text-yellow-500 truncate block">{activeSet.name}</span>
               </div>
-              <button 
-                onClick={handleShuffle}
-                className="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-secondary-fixed text-on-secondary-container active-press"
-              >
-                <Shuffle size={20} />
-              </button>
+              <div className="flex items-center gap-2">
+                {activeSet.id === 'abakada-phonetic' && (
+                  <button 
+                    onClick={() => setIsVowelMenuOpen(true)}
+                    className="h-10 px-3 flex items-center justify-center rounded-xl bg-primary-container text-on-primary-container font-black text-lg border-2 border-primary active-press"
+                  >
+                    {selectedVowel.toUpperCase()}
+                  </button>
+                )}
+                <button 
+                  onClick={handleShuffle}
+                  className="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-secondary-fixed text-on-secondary-container active-press"
+                >
+                  <Shuffle size={20} />
+                </button>
+              </div>
             </header>
+
+            <AnimatePresence>
+              {isVowelMenuOpen && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-black/60 backdrop-blur-sm"
+                  onClick={() => setIsVowelMenuOpen(false)}
+                >
+                  <motion.div 
+                    initial={{ scale: 0.9, y: 20 }}
+                    animate={{ scale: 1, y: 0 }}
+                    exit={{ scale: 0.9, y: 20 }}
+                    className="bg-surface-container-highest p-8 rounded-[40px] border-4 border-surface-variant w-full max-w-[400px] text-center"
+                    onClick={e => e.stopPropagation()}
+                  >
+                    <h3 className="text-2xl font-black mb-8 text-on-surface">Select Vowel Partner</h3>
+                    <div className="grid grid-cols-5 gap-3">
+                      {['a', 'e', 'i', 'o', 'u'].map(v => (
+                        <button
+                          key={v}
+                          onClick={() => updateAbakadaVowel(v)}
+                          className={`h-16 rounded-2xl flex items-center justify-center font-black text-2xl border-4 transition-all active-press
+                            ${selectedVowel === v 
+                              ? 'bg-primary text-on-primary border-primary-fixed-dim chunky-shadow-secondary' 
+                              : 'bg-surface-container text-on-surface border-surface-variant'}`}
+                        >
+                          {v.toUpperCase()}
+                        </button>
+                      ))}
+                    </div>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
 
             <main className="flex-1 flex flex-col items-center justify-center px-6 py-8 overflow-hidden relative">
               <div className="w-full max-w-[500px] flex items-center gap-4 mb-8">
@@ -573,49 +641,6 @@ export default function App() {
           </motion.div>
         )}
 
-        {view === 'settings' && (
-          <motion.div 
-            key="settings"
-            initial={{ opacity: 0, x: -100 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -100 }}
-            className="flex-1 flex flex-col h-full bg-background"
-          >
-            <header className="px-6 py-6 border-b-4 border-surface-container flex items-center justify-between bg-surface-container-lowest">
-               <button onClick={() => setView('library')} className="h-12 w-12 flex items-center justify-center rounded-full bg-surface-container active-press">
-                <ArrowLeft size={24} />
-              </button>
-              <h2 className="text-2xl font-black text-yellow-500">Settings</h2>
-              <div className="w-12" />
-            </header>
-
-            <main className="p-6 space-y-6 overflow-y-auto pb-24">
-              <div className="bg-surface-container-lowest p-6 rounded-[32px] border-4 border-surface-variant chunky-shadow-card">
-                <h3 className="font-black text-sm uppercase text-on-surface-variant mb-6 tracking-wider">Preferences</h3>
-                
-                <div className="space-y-4">
-                  <div className="flex items-center justify-between p-4 bg-background rounded-2xl border-2 border-surface-variant">
-                    <div className="flex items-center gap-4">
-                      <div className={`h-12 w-12 rounded-xl flex items-center justify-center transition-colors ${isDarkMode ? 'bg-secondary-container text-on-secondary-container' : 'bg-primary-container text-on-primary-container'}`}>
-                        {isDarkMode ? <Moon size={24} /> : <Sun size={24} />}
-                      </div>
-                      <span className="font-bold text-lg">Dark Mode</span>
-                    </div>
-                    <button 
-                      onClick={toggleDarkMode}
-                      className={`h-8 w-14 rounded-full p-1 transition-colors duration-300 flex items-center ${isDarkMode ? 'bg-tertiary' : 'bg-surface-container-highest'}`}
-                    >
-                      <motion.div 
-                        animate={{ x: isDarkMode ? 24 : 0 }}
-                        className="h-6 w-6 bg-white rounded-full shadow-md" 
-                      />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </main>
-          </motion.div>
-        )}
 
         {view === 'editor' && editingSet && (
           <motion.div 
