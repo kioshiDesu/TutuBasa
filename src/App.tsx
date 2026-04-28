@@ -5,8 +5,9 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Settings, Star, ArrowLeft, ArrowRight, Plus, Trash2, Edit3, BookOpen, ChevronRight, Play, Trophy, Moon, Sun, Shuffle, Mic, Square, Volume2 } from 'lucide-react';
+import { X, Settings, Star, ArrowLeft, ArrowRight, Plus, Trash2, Edit3, BookOpen, ChevronRight, Play, Trophy, Moon, Sun, Shuffle, Mic, Square, Volume2, RotateCcw } from 'lucide-react';
 import { saveAudio, getAudio } from './lib/audioDB';
+import { TracingCanvas } from './components/TracingCanvas';
 
 interface Flashcard {
   syllable: string;
@@ -96,11 +97,15 @@ export default function App() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState(0);
   const [isDarkMode, setIsDarkMode] = useState(false);
+  const [appMode, setAppMode] = useState<'read' | 'write'>('read');
+  const [isLowerCase, setIsLowerCase] = useState(false);
   const [selectedVowel, setSelectedVowel] = useState('a');
   const [isVowelMenuOpen, setIsVowelMenuOpen] = useState(false);
   
   const [editingSet, setEditingSet] = useState<CardSet | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const clearCanvasRef = useRef<(() => void) | null>(null);
 
   const [hasAudio, setHasAudio] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -165,7 +170,7 @@ export default function App() {
     }
   };
 
-  const handleAudioAction = (forceRecord = false) => {
+  const handleAudioAction = (forceRecord = false, playOnly = false) => {
     if (isRecording) {
       mediaRecorderRef.current?.stop();
       return;
@@ -179,7 +184,7 @@ export default function App() {
       audioPlayerRef.current.src = currentAudioUrlRef.current!;
       audioPlayerRef.current.play();
       setIsPlaying(true);
-    } else {
+    } else if (!playOnly) {
       startRecording();
     }
   };
@@ -406,7 +411,8 @@ export default function App() {
       setDirection(1);
       setCurrentIndex((prev) => prev + 1);
     } else {
-      setView('congrats');
+      if (appMode === 'write') setView('library');
+      else setView('congrats');
     }
   };
 
@@ -450,17 +456,33 @@ export default function App() {
             exit={{ opacity: 0, y: -20 }}
             className="flex-1 flex flex-col h-full"
           >
-            <header className="px-6 py-10 flex justify-between items-center">
-              <div>
-                <h1 className="text-4xl font-black text-yellow-500 tracking-tight">Library</h1>
-                <p className="text-on-surface-variant font-bold">Choose your adventure</p>
+            <header className="px-6 py-10 flex flex-col gap-6">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h1 className="text-4xl font-black text-yellow-500 tracking-tight">Library</h1>
+                  <p className="text-on-surface-variant font-bold">Choose your adventure</p>
+                </div>
+                <button 
+                  onClick={toggleDarkMode}
+                  className="h-14 w-14 rounded-2xl bg-surface-container border-4 border-surface-variant flex items-center justify-center active-press chunky-shadow-sm transition-all"
+                >
+                  {isDarkMode ? <Sun className="text-yellow-500" size={28} /> : <Moon className="text-secondary" size={28} />}
+                </button>
               </div>
-              <button 
-                onClick={toggleDarkMode}
-                className="h-14 w-14 rounded-2xl bg-surface-container border-4 border-surface-variant flex items-center justify-center active-press chunky-shadow-sm transition-all"
-              >
-                {isDarkMode ? <Sun className="text-yellow-500" size={28} /> : <Moon className="text-secondary" size={28} />}
-              </button>
+              <div className="flex gap-2">
+                 <button 
+                   onClick={() => setAppMode('read')}
+                   className={`flex-1 h-14 rounded-2xl flex items-center justify-center gap-2 font-bold text-lg border-4 transition-all active-press ${appMode === 'read' ? 'bg-primary text-on-primary border-primary-fixed-dim chunky-shadow-sm' : 'bg-surface-container text-on-surface-variant border-surface-variant text-opacity-70'}`}
+                 >
+                   <BookOpen size={20} /> Read
+                 </button>
+                 <button 
+                   onClick={() => setAppMode('write')}
+                   className={`flex-1 h-14 rounded-2xl flex items-center justify-center gap-2 font-bold text-lg border-4 transition-all active-press ${appMode === 'write' ? 'bg-tertiary-container text-on-tertiary-container border-tertiary-fixed-dim chunky-shadow-card' : 'bg-surface-container text-on-surface-variant border-surface-variant text-opacity-70'}`}
+                 >
+                   <Edit3 size={20} /> Write
+                 </button>
+              </div>
             </header>
 
             <main className="flex-1 overflow-y-auto px-6 pb-24 space-y-8">
@@ -593,12 +615,23 @@ export default function App() {
                     {selectedVowel.toUpperCase()}
                   </button>
                 )}
-                <button 
-                  onClick={handleShuffle}
-                  className="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-secondary-fixed text-on-secondary-container active-press"
-                >
-                  <Shuffle size={20} />
-                </button>
+                {appMode === 'write' ? (
+                  ['consonants-only', 'abc-eng', 'vowels'].includes(activeSet.id) && (
+                    <button 
+                      onClick={() => setIsLowerCase(!isLowerCase)}
+                      className="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-secondary-fixed text-on-secondary-container font-black text-lg border-2 border-secondary active-press"
+                    >
+                      {isLowerCase ? 'a' : 'A'}
+                    </button>
+                  )
+                ) : (
+                  <button 
+                    onClick={handleShuffle}
+                    className="h-10 w-10 shrink-0 flex items-center justify-center rounded-full bg-secondary-fixed text-on-secondary-container active-press"
+                  >
+                    <Shuffle size={20} />
+                  </button>
+                )}
               </div>
             </header>
 
@@ -671,38 +704,53 @@ export default function App() {
                       x: { type: "spring", stiffness: 300, damping: 30 },
                       opacity: { duration: 0.2 }
                     }}
-                    className="w-full h-full bg-surface-container-lowest rounded-[40px] border-4 border-surface-variant chunky-shadow-card flex flex-col items-center justify-center p-6 text-center overflow-hidden"
+                    className="w-full h-full bg-surface-container-lowest rounded-[40px] border-4 border-surface-variant chunky-shadow-card flex flex-col items-center justify-center p-6 text-center overflow-hidden relative"
                   >
-                    <h1 className={`${getFontSizeClass(sessionCards[currentIndex]?.syllable)} leading-none font-black tracking-tighter text-on-surface`}>
-                      {sessionCards[currentIndex]?.syllable}
-                    </h1>
-                    
-                    <div className="mt-12 flex items-center justify-center" onPointerLeave={endPress} onMouseLeave={endPress}>
-                      <button
-                         onPointerDown={startPress}
-                         onPointerUp={endPress}
-                         onClick={handleAudioClick}
-                         className={`group relative h-16 w-16 sm:h-20 sm:w-20 rounded-full border-4 flex items-center justify-center transition-all active-press 
-                         ${isRecording ? 'bg-error text-error-container border-error-container chunky-shadow-sm animate-pulse' 
-                         : hasAudio ? (isPlaying ? 'bg-primary text-on-primary border-primary-fixed-dim chunky-shadow-sm' : 'bg-primary-container text-on-primary-container border-primary chunky-shadow-sm') 
-                         : 'bg-surface-container-high text-on-surface-variant border-surface-variant chunky-shadow-sm'}`}
-                      >
-                         {isRecording ? <Square size={28} className="fill-current" /> :
-                          hasAudio ? <Volume2 size={28} className={isPlaying ? "animate-pulse" : ""} /> :
-                          <Mic size={28} />}
-                          
-                         {!hasAudio && !isRecording && (
-                           <span className="absolute -bottom-10 bg-surface-variant text-on-surface-variant text-xs font-bold px-3 py-1 rounded-lg opacity-0 md:group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                             Tap to record
-                           </span>
-                         )}
-                         {hasAudio && !isRecording && !isPlaying && (
-                           <span className="absolute -bottom-10 bg-surface-variant text-on-surface-variant text-xs font-bold px-3 py-1 rounded-lg opacity-0 md:group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
-                             Hold to re-record
-                           </span>
-                         )}
-                      </button>
-                    </div>
+                    {appMode === 'write' ? (
+                      <>
+                        <div className="w-full h-[300px] sm:h-[340px] relative pointer-events-auto">
+                           <TracingCanvas text={isLowerCase ? sessionCards[currentIndex]?.syllable?.toLowerCase() : sessionCards[currentIndex]?.syllable} onClearRef={ref => clearCanvasRef.current = ref} onDrawEnd={() => { if (!isRecording && !isPlaying) handleAudioAction(false, true); }} />
+                        </div>
+                        <div className="absolute bottom-6 right-6 z-20 pointer-events-auto">
+                          <button onClick={() => clearCanvasRef.current?.()} className="h-12 w-12 rounded-full bg-surface-container border-2 border-surface-variant flex items-center justify-center active-press hover:bg-surface-variant transition-colors shadow-sm">
+                            <RotateCcw size={20} className="text-on-surface-variant" />
+                          </button>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <h1 className={`${getFontSizeClass(sessionCards[currentIndex]?.syllable)} leading-none font-black tracking-tighter text-on-surface`}>
+                          {isLowerCase ? sessionCards[currentIndex]?.syllable?.toLowerCase() : sessionCards[currentIndex]?.syllable}
+                        </h1>
+                        
+                        <div className="mt-12 flex items-center justify-center" onPointerLeave={endPress} onMouseLeave={endPress}>
+                          <button
+                             onPointerDown={startPress}
+                             onPointerUp={endPress}
+                             onClick={handleAudioClick}
+                             className={`group relative h-16 w-16 sm:h-20 sm:w-20 rounded-full border-4 flex items-center justify-center transition-all active-press 
+                             ${isRecording ? 'bg-error text-error-container border-error-container chunky-shadow-sm animate-pulse' 
+                             : hasAudio ? (isPlaying ? 'bg-primary text-on-primary border-primary-fixed-dim chunky-shadow-sm' : 'bg-primary-container text-on-primary-container border-primary chunky-shadow-sm') 
+                             : 'bg-surface-container-high text-on-surface-variant border-surface-variant chunky-shadow-sm'}`}
+                          >
+                             {isRecording ? <Square size={28} className="fill-current" /> :
+                              hasAudio ? <Volume2 size={28} className={isPlaying ? "animate-pulse" : ""} /> :
+                              <Mic size={28} />}
+                              
+                             {!hasAudio && !isRecording && (
+                               <span className="absolute -bottom-10 bg-surface-variant text-on-surface-variant text-xs font-bold px-3 py-1 rounded-lg opacity-0 md:group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                                 Tap to record
+                               </span>
+                             )}
+                             {hasAudio && !isRecording && !isPlaying && (
+                               <span className="absolute -bottom-10 bg-surface-variant text-on-surface-variant text-xs font-bold px-3 py-1 rounded-lg opacity-0 md:group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                                 Hold to re-record
+                               </span>
+                             )}
+                          </button>
+                        </div>
+                      </>
+                    )}
                   </motion.div>
                 </AnimatePresence>
               </div>
@@ -722,7 +770,7 @@ export default function App() {
                   onClick={handleNext}
                   className={`flex-1 h-16 rounded-2xl flex items-center justify-center gap-2 font-black text-xl border-4 active-press transition-all bg-tertiary-container text-on-tertiary-container border-tertiary-fixed-dim shadow-[0_4px_0_0_theme(colors.tertiary-fixed-dim)] hover:brightness-105 ${currentIndex === sessionCards.length - 1 ? 'finish-btn' : ''}`}
                 >
-                  {currentIndex === sessionCards.length - 1 ? 'Finish' : 'Next'} <ArrowRight size={24} strokeWidth={3} />
+                  {currentIndex === sessionCards.length - 1 ? (appMode === 'write' ? 'Done' : 'Finish') : 'Next'} <ArrowRight size={24} strokeWidth={3} />
                 </button>
               </div>
               {activeSet.id === 'numbers' && (
