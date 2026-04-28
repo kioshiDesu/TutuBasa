@@ -3,9 +3,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { X, Settings, Star, ArrowLeft, ArrowRight, Plus, Trash2, Edit3, BookOpen, ChevronRight, Play, Trophy, Moon, Sun, Shuffle } from 'lucide-react';
+import { X, Settings, Star, ArrowLeft, ArrowRight, Plus, Trash2, Edit3, BookOpen, ChevronRight, Play, Trophy, Moon, Sun, Shuffle, Mic, Square, Volume2 } from 'lucide-react';
+import { saveAudio, getAudio } from './lib/audioDB';
 
 interface Flashcard {
   syllable: string;
@@ -68,6 +69,20 @@ const PRESET_SETS: CardSet[] = [
     name: 'Numbers',
     isPreset: true,
     cards: Array.from({length: 10}, (_, i) => ({ syllable: String(i + 1) })),
+  },
+  {
+    id: 'animals',
+    name: 'Animals',
+    isPreset: true,
+    cards: [
+      { syllable: 'Ant' }, { syllable: 'Bear' }, { syllable: 'Cat' },
+      { syllable: 'Dog' }, { syllable: 'Elephant' }, { syllable: 'Fish' },
+      { syllable: 'Giraffe' }, { syllable: 'Horse' }, { syllable: 'Iguana' },
+      { syllable: 'Jellyfish' }, { syllable: 'Kangaroo' }, { syllable: 'Lion' },
+      { syllable: 'Monkey' }, { syllable: 'Owl' }, { syllable: 'Penguin' },
+      { syllable: 'Rabbit' }, { syllable: 'Snake' }, { syllable: 'Tiger' },
+      { syllable: 'Whale' }, { syllable: 'Zebra' }
+    ]
   }
 ];
 
@@ -86,6 +101,107 @@ export default function App() {
   
   const [editingSet, setEditingSet] = useState<CardSet | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  const [hasAudio, setHasAudio] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [isPlaying, setIsPlaying] = useState(false);
+
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const currentAudioUrlRef = useRef<string | null>(null);
+  const audioPlayerRef = useRef<HTMLAudioElement | null>(null);
+  const pressTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const holdTriggeredRef = useRef(false);
+
+  useEffect(() => {
+    if (view === 'study' && sessionCards[currentIndex]) {
+      if (audioPlayerRef.current) {
+        audioPlayerRef.current.pause();
+      }
+      const audioId = `${activeSet.id}_${sessionCards[currentIndex].syllable}`;
+      getAudio(audioId).then(blob => {
+        if (blob) {
+          setHasAudio(true);
+          if (currentAudioUrlRef.current) URL.revokeObjectURL(currentAudioUrlRef.current);
+          currentAudioUrlRef.current = URL.createObjectURL(blob);
+        } else {
+          setHasAudio(false);
+          if (currentAudioUrlRef.current) URL.revokeObjectURL(currentAudioUrlRef.current);
+          currentAudioUrlRef.current = null;
+        }
+        setIsPlaying(false);
+        setIsRecording(false);
+      });
+    }
+  }, [currentIndex, sessionCards, activeSet.id, view]);
+
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      audioChunksRef.current = [];
+
+      mediaRecorder.ondataavailable = e => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        setIsRecording(false);
+        const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+        const audioId = `${activeSet.id}_${sessionCards[currentIndex].syllable}`;
+        await saveAudio(audioId, audioBlob);
+        setHasAudio(true);
+        if (currentAudioUrlRef.current) URL.revokeObjectURL(currentAudioUrlRef.current);
+        currentAudioUrlRef.current = URL.createObjectURL(audioBlob);
+        stream.getTracks().forEach(track => track.stop()); // release mic
+      };
+
+      mediaRecorder.start();
+      setIsRecording(true);
+    } catch (err) {
+      console.error("Microphone access denied", err);
+      alert("Microphone access is needed to record audio.");
+    }
+  };
+
+  const handleAudioAction = (forceRecord = false) => {
+    if (isRecording) {
+      mediaRecorderRef.current?.stop();
+      return;
+    }
+
+    if (hasAudio && !forceRecord) {
+      if (!audioPlayerRef.current) {
+         audioPlayerRef.current = new Audio();
+         audioPlayerRef.current.onended = () => setIsPlaying(false);
+      }
+      audioPlayerRef.current.src = currentAudioUrlRef.current!;
+      audioPlayerRef.current.play();
+      setIsPlaying(true);
+    } else {
+      startRecording();
+    }
+  };
+
+  const startPress = () => {
+    holdTriggeredRef.current = false;
+    pressTimerRef.current = setTimeout(() => {
+      holdTriggeredRef.current = true;
+      if (hasAudio && !isRecording) {
+         handleAudioAction(true);
+      }
+    }, 600);
+  };
+
+  const endPress = () => {
+    if (pressTimerRef.current) clearTimeout(pressTimerRef.current);
+  };
+
+  const handleAudioClick = () => {
+    if (holdTriggeredRef.current) return;
+    handleAudioAction();
+  };
 
   useEffect(() => {
     const saved = localStorage.getItem('abakada_user_sets');
@@ -141,7 +257,7 @@ export default function App() {
       osc.type = 'sine';
       osc.frequency.setValueAtTime(600, ctx.currentTime);
       osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.1);
-      gain.gain.setValueAtTime(0.05, ctx.currentTime);
+      gain.gain.setValueAtTime(0.3, ctx.currentTime);
       gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
       osc.connect(gain);
       gain.connect(ctx.destination);
@@ -162,7 +278,7 @@ export default function App() {
         const gain = ctx.createGain();
         osc.type = 'sine';
         osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.1, startTime);
+        gain.gain.setValueAtTime(0.5, startTime);
         gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
         osc.connect(gain);
         gain.connect(ctx.destination);
@@ -560,6 +676,33 @@ export default function App() {
                     <h1 className={`${getFontSizeClass(sessionCards[currentIndex]?.syllable)} leading-none font-black tracking-tighter text-on-surface`}>
                       {sessionCards[currentIndex]?.syllable}
                     </h1>
+                    
+                    <div className="mt-12 flex items-center justify-center" onPointerLeave={endPress} onMouseLeave={endPress}>
+                      <button
+                         onPointerDown={startPress}
+                         onPointerUp={endPress}
+                         onClick={handleAudioClick}
+                         className={`group relative h-16 w-16 sm:h-20 sm:w-20 rounded-full border-4 flex items-center justify-center transition-all active-press 
+                         ${isRecording ? 'bg-error text-error-container border-error-container chunky-shadow-sm animate-pulse' 
+                         : hasAudio ? (isPlaying ? 'bg-primary text-on-primary border-primary-fixed-dim chunky-shadow-sm' : 'bg-primary-container text-on-primary-container border-primary chunky-shadow-sm') 
+                         : 'bg-surface-container-high text-on-surface-variant border-surface-variant chunky-shadow-sm'}`}
+                      >
+                         {isRecording ? <Square size={28} className="fill-current" /> :
+                          hasAudio ? <Volume2 size={28} className={isPlaying ? "animate-pulse" : ""} /> :
+                          <Mic size={28} />}
+                          
+                         {!hasAudio && !isRecording && (
+                           <span className="absolute -bottom-10 bg-surface-variant text-on-surface-variant text-xs font-bold px-3 py-1 rounded-lg opacity-0 md:group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                             Tap to record
+                           </span>
+                         )}
+                         {hasAudio && !isRecording && !isPlaying && (
+                           <span className="absolute -bottom-10 bg-surface-variant text-on-surface-variant text-xs font-bold px-3 py-1 rounded-lg opacity-0 md:group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
+                             Hold to re-record
+                           </span>
+                         )}
+                      </button>
+                    </div>
                   </motion.div>
                 </AnimatePresence>
               </div>
