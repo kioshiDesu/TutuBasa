@@ -35,6 +35,8 @@ jobs:
         run: |
           npx cap add android
           npx cap sync android
+          # Inject Microphone permissions into AndroidManifest.xml
+          sed -i '/<\/manifest>/i \    <uses-permission android:name="android.permission.RECORD_AUDIO" />\n    <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />' android/app/src/main/AndroidManifest.xml
 
       - name: Build Android APK
         run: |

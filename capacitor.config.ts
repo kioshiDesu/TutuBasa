@@ -23,7 +23,7 @@ const config: CapacitorConfig = {
   android: {
     buildOptions: {
       keystorePath: null,
-      releaseType: 'debug'
+      releaseType: 'APK'
     }
   }
 };
