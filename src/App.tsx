@@ -25,6 +25,7 @@ interface CardSet {
   isPreset?: boolean;
   type?: 'read-write' | 'fill-in';
   tier?: 'Beginner' | 'Intermediate' | 'Expert';
+  isChallenge?: boolean;
 }
 
 const PRESET_SETS: CardSet[] = [
@@ -84,18 +85,110 @@ const PRESET_SETS: CardSet[] = [
     cards: Array.from({length: 10}, (_, i) => ({ syllable: String(i + 1) })),
   },
   {
-    id: 'animals',
+    id: 'animals-read',
     name: 'Animals',
     isPreset: true,
-    tier: 'Beginner',
+    tier: 'Intermediate',
     cards: [
-      { syllable: 'Ant' }, { syllable: 'Bear' }, { syllable: 'Cat' },
-      { syllable: 'Dog' }, { syllable: 'Elephant' }, { syllable: 'Fish' },
-      { syllable: 'Giraffe' }, { syllable: 'Horse' }, { syllable: 'Iguana' },
-      { syllable: 'Jellyfish' }, { syllable: 'Kangaroo' }, { syllable: 'Lion' },
-      { syllable: 'Monkey' }, { syllable: 'Owl' }, { syllable: 'Penguin' },
-      { syllable: 'Rabbit' }, { syllable: 'Snake' }, { syllable: 'Tiger' },
-      { syllable: 'Whale' }, { syllable: 'Zebra' }
+      { syllable: 'Ant', image: '🐜' }, { syllable: 'Bear', image: '🐻' }, { syllable: 'Cat', image: '🐈' },
+      { syllable: 'Dog', image: '🐕' }, { syllable: 'Elephant', image: '🐘' }, { syllable: 'Fish', image: '🐟' },
+      { syllable: 'Giraffe', image: '🦒' }, { syllable: 'Horse', image: '🐎' }, { syllable: 'Iguana', image: '🦎' },
+      { syllable: 'Jellyfish', image: '🪼' }, { syllable: 'Kangaroo', image: '🦘' }, { syllable: 'Lion', image: '🦁' },
+      { syllable: 'Monkey', image: '🐒' }, { syllable: 'Owl', image: '🦉' }, { syllable: 'Penguin', image: '🐧' },
+      { syllable: 'Rabbit', image: '🐇' }, { syllable: 'Snake', image: '🐍' }, { syllable: 'Tiger', image: '🐯' },
+      { syllable: 'Whale', image: '🐋' }, { syllable: 'Zebra', image: '🦓' }, { syllable: 'Panda', image: '🐼' },
+      { syllable: 'Koala', image: '🐨' }, { syllable: 'Fox', image: '🦊' }, { syllable: 'Shark', image: '🦈' },
+      { syllable: 'Crab', image: '🦀' }, { syllable: 'Turtle', image: '🐢' }, { syllable: 'Beaver', image: '🦫' },
+      { syllable: 'Chicken', image: '🐔' }, { syllable: 'Sheep', image: '🐑' }, { syllable: 'Pig', image: '🐖' }
+    ]
+  },
+  {
+    id: 'fruits-read',
+    name: 'Fruits',
+    isPreset: true,
+    tier: 'Intermediate',
+    cards: [
+      { syllable: 'Apple', image: '🍎' }, { syllable: 'Banana', image: '🍌' }, { syllable: 'Cherry', image: '🍒' },
+      { syllable: 'Grape', image: '🍇' }, { syllable: 'Melon', image: '🍈' }, { syllable: 'Peach', image: '🍑' },
+      { syllable: 'Pear', image: '🍐' }, { syllable: 'Plum', image: '🫐' }, { syllable: 'Kiwi', image: '🥝' },
+      { syllable: 'Lemon', image: '🍋' }, { syllable: 'Mango', image: '🥭' }, { syllable: 'Orange', image: '🍊' },
+      { syllable: 'Pineapple', image: '🍍' }, { syllable: 'Strawberry', image: '🍓' }, { syllable: 'Watermelon', image: '🍉' },
+      { syllable: 'Avocado', image: '🥑' }, { syllable: 'Coconut', image: '🥥' }, { syllable: 'Tomato', image: '🍅' },
+      { syllable: 'Pomegranate', image: '🍎' }
+    ]
+  },
+  {
+    id: 'veggies-read',
+    name: 'Vegetables',
+    isPreset: true,
+    tier: 'Intermediate',
+    cards: [
+      { syllable: 'Carrot', image: '🥕' }, { syllable: 'Potato', image: '🥔' }, { syllable: 'Corn', image: '🌽' },
+      { syllable: 'Onion', image: '🧅' }, { syllable: 'Broccoli', image: '🥦' }, { syllable: 'Pumpkin', image: '🎃' },
+      { syllable: 'Mushroom', image: '🍄' }, { syllable: 'Eggplant', image: '🍆' }, { syllable: 'Cucumber', image: '🥒' },
+      { syllable: 'Pepper', image: '🫑' }, { syllable: 'Garlic', image: '🧄' }, { syllable: 'Peas', image: '🫛' }
+    ]
+  },
+  {
+    id: 'foods-read',
+    name: 'Foods',
+    isPreset: true,
+    tier: 'Intermediate',
+    cards: [
+      { syllable: 'Burger', image: '🍔' }, { syllable: 'Pizza', image: '🍕' }, { syllable: 'Fries', image: '🍟' },
+      { syllable: 'Hotdog', image: '🌭' }, { syllable: 'Taco', image: '🌮' }, { syllable: 'Donut', image: '🍩' },
+      { syllable: 'Ice Cream', image: '🍦' }, { syllable: 'Pancake', image: '🥞' }, { syllable: 'Sushi', image: '🍣' },
+      { syllable: 'Curry', image: '🍛' }, { syllable: 'Bread', image: '🍞' }, { syllable: 'Cheese', image: '🧀' }
+    ]
+  },
+  {
+    id: 'flowers-read',
+    name: 'Flowers',
+    isPreset: true,
+    tier: 'Intermediate',
+    cards: [
+      { syllable: 'Rose', image: '🌹' }, { syllable: 'Sunflower', image: '🌻' }, { syllable: 'Tulip', image: '🌷' },
+      { syllable: 'Blossom', image: '🌸' }, { syllable: 'Hibiscus', image: '🌺' }, { syllable: 'Daisy', image: '🌼' }
+    ]
+  },
+  {
+    id: 'colors-read',
+    name: 'Colors',
+    isPreset: true,
+    tier: 'Intermediate',
+    cards: [
+      { syllable: 'Red', image: '🔴' }, { syllable: 'Blue', image: '🔵' }, { syllable: 'Yellow', image: '🟡' },
+      { syllable: 'Green', image: '🟢' }, { syllable: 'Orange', image: '🟠' }, { syllable: 'Purple', image: '🟣' }
+    ]
+  },
+  {
+    id: 'weather-read',
+    name: 'Temperature',
+    isPreset: true,
+    tier: 'Intermediate',
+    cards: [
+      { syllable: 'Hot', image: '☀️' }, { syllable: 'Cold', image: '❄️' }, { syllable: 'Rain', image: '🌧️' },
+      { syllable: 'Snow', image: '🌨️' }, { syllable: 'Warm', image: '⛅' }, { syllable: 'Storm', image: '⛈️' }
+    ]
+  },
+  {
+    id: 'numbers-challenge',
+    name: 'Numbers Challenge',
+    isPreset: true,
+    type: 'fill-in',
+    tier: 'Intermediate',
+    isChallenge: true,
+    cards: [
+      { syllable: 'One', answer: '1', options: ['2', '3', '0'] },
+      { syllable: 'Two', answer: '2', options: ['1', '3', '4'] },
+      { syllable: 'Three', answer: '3', options: ['2', '4', '5'] },
+      { syllable: 'Four', answer: '4', options: ['3', '5', '6'] },
+      { syllable: 'Five', answer: '5', options: ['4', '6', '7'] },
+      { syllable: 'Six', answer: '6', options: ['5', '7', '8'] },
+      { syllable: 'Seven', answer: '7', options: ['6', '8', '9'] },
+      { syllable: 'Eight', answer: '8', options: ['7', '9', '6'] },
+      { syllable: 'Nine', answer: '9', options: ['8', '0', '7'] },
+      { syllable: 'Ten', answer: '10', options: ['9', '1', '11'] }
     ]
   },
   {
@@ -104,6 +197,7 @@ const PRESET_SETS: CardSet[] = [
     isPreset: true,
     type: 'fill-in',
     tier: 'Intermediate',
+    isChallenge: true,
     cards: [
       { syllable: 'A_T', answer: 'ANT', image: '🐜', options: ['N', 'M', 'R'] },
       { syllable: 'B_T', answer: 'BAT', image: '🦇', options: ['A', 'E', 'O'] },
@@ -123,7 +217,10 @@ const PRESET_SETS: CardSet[] = [
       { syllable: 'FR_G', answer: 'FROG', image: '🐸', options: ['O', 'A', 'U'] },
       { syllable: 'B_RD', answer: 'BIRD', image: '🐦', options: ['I', 'E', 'A'] },
       { syllable: 'L_ON', answer: 'LION', image: '🦁', options: ['I', 'E', 'A'] },
-      { syllable: 'W_LF', answer: 'WOLF', image: '🐺', options: ['O', 'A', 'E'] }
+      { syllable: 'W_LF', answer: 'WOLF', image: '🐺', options: ['O', 'A', 'E'] },
+      { syllable: 'P_NDA', answer: 'PANDA', image: '🐼', options: ['A', 'E', 'O'] },
+      { syllable: 'SH_RK', answer: 'SHARK', image: '🦈', options: ['A', 'E', 'I'] },
+      { syllable: 'CR_B', answer: 'CRAB', image: '🦀', options: ['A', 'E', 'U'] }
     ]
   },
   {
@@ -132,6 +229,7 @@ const PRESET_SETS: CardSet[] = [
     isPreset: true,
     type: 'fill-in',
     tier: 'Intermediate',
+    isChallenge: true,
     cards: [
       { syllable: 'AP_LE', answer: 'APPLE', image: '🍎', options: ['P', 'B', 'D'] },
       { syllable: 'B_NANA', answer: 'BANANA', image: '🍌', options: ['A', 'E', 'I'] },
@@ -140,9 +238,91 @@ const PRESET_SETS: CardSet[] = [
       { syllable: 'M_LON', answer: 'MELON', image: '🍈', options: ['E', 'A', 'O'] },
       { syllable: 'P_ACH', answer: 'PEACH', image: '🍑', options: ['E', 'A', 'I'] },
       { syllable: 'P_AR', answer: 'PEAR', image: '🍐', options: ['E', 'A', 'O'] },
-      { syllable: 'PL_M', answer: 'PLUM', image: '🍑', options: ['U', 'A', 'E'] },
+      { syllable: 'PL_M', answer: 'PLUM', image: '🫐', options: ['U', 'A', 'E'] },
       { syllable: 'K_WI', answer: 'KIWI', image: '🥝', options: ['I', 'E', 'A'] },
-      { syllable: 'L_MON', answer: 'LEMON', image: '🍋', options: ['E', 'A', 'O'] }
+      { syllable: 'L_MON', answer: 'LEMON', image: '🍋', options: ['E', 'A', 'O'] },
+      { syllable: 'M_NGO', answer: 'MANGO', image: '🥭', options: ['A', 'E', 'O'] },
+      { syllable: 'OR_NGE', answer: 'ORANGE', image: '🍊', options: ['A', 'E', 'I'] },
+      { syllable: 'STR_WBERRY', answer: 'STRAWBERRY', image: '🍓', options: ['A', 'E', 'I'] },
+      { syllable: 'W_TERMELON', answer: 'WATERMELON', image: '🍉', options: ['A', 'E', 'U'] }
+    ]
+  },
+  {
+    id: 'veggies-fill',
+    name: 'Vegetables (Fill in)',
+    isPreset: true,
+    type: 'fill-in',
+    tier: 'Intermediate',
+    isChallenge: true,
+    cards: [
+      { syllable: 'C_RROT', answer: 'CARROT', image: '🥕', options: ['A', 'E', 'O'] },
+      { syllable: 'P_TATO', answer: 'POTATO', image: '🥔', options: ['O', 'A', 'E'] },
+      { syllable: 'C_RN', answer: 'CORN', image: '🌽', options: ['O', 'A', 'U'] },
+      { syllable: 'ON_ON', answer: 'ONION', image: '🧅', options: ['I', 'E', 'Y'] },
+      { syllable: 'B_OCCOLI', answer: 'BROCCOLI', image: '🥦', options: ['R', 'L', 'P'] },
+      { syllable: 'P_MPKIN', answer: 'PUMPKIN', image: '🎃', options: ['U', 'A', 'O'] },
+      { syllable: 'M_SHROOM', answer: 'MUSHROOM', image: '🍄', options: ['U', 'A', 'O'] },
+      { syllable: 'E_GPLANT', answer: 'EGGPLANT', image: '🍆', options: ['G', 'E', 'I'] },
+      { syllable: 'G_RLIC', answer: 'GARLIC', image: '🧄', options: ['A', 'E', 'O'] }
+    ]
+  },
+  {
+    id: 'foods-fill',
+    name: 'Foods (Fill in)',
+    isPreset: true,
+    type: 'fill-in',
+    tier: 'Intermediate',
+    isChallenge: true,
+    cards: [
+      { syllable: 'B_RGER', answer: 'BURGER', image: '🍔', options: ['U', 'A', 'E'] },
+      { syllable: 'P_ZZA', answer: 'PIZZA', image: '🍕', options: ['I', 'A', 'E'] },
+      { syllable: 'FR_ES', answer: 'FRIES', image: '🍟', options: ['I', 'E', 'A'] },
+      { syllable: 'H_TDOG', answer: 'HOTDOG', image: '🌭', options: ['O', 'A', 'E'] },
+      { syllable: 'T_CO', answer: 'TACO', image: '🌮', options: ['A', 'O', 'E'] },
+      { syllable: 'D_NUT', answer: 'DONUT', image: '🍩', options: ['O', 'A', 'U'] },
+      { syllable: 'P_NCAKE', answer: 'PANCAKE', image: '🥞', options: ['A', 'E', 'O'] },
+      { syllable: 'S_SHI', answer: 'SUSHI', image: '🍣', options: ['U', 'I', 'O'] }
+    ]
+  },
+  {
+    id: 'flowers-fill',
+    name: 'Flowers (Fill in)',
+    isPreset: true,
+    type: 'fill-in',
+    tier: 'Intermediate',
+    isChallenge: true,
+    cards: [
+      { syllable: 'R_SE', answer: 'ROSE', image: '🌹', options: ['O', 'A', 'E'] },
+      { syllable: 'T_LIP', answer: 'TULIP', image: '🌷', options: ['U', 'A', 'O'] },
+      { syllable: 'D_ISY', answer: 'DAISY', image: '🌼', options: ['A', 'E', 'I'] }
+    ]
+  },
+  {
+    id: 'colors-fill',
+    name: 'Colors (Fill in)',
+    isPreset: true,
+    type: 'fill-in',
+    tier: 'Intermediate',
+    isChallenge: true,
+    cards: [
+      { syllable: 'R_D', answer: 'RED', image: '🔴', options: ['E', 'A', 'O'] },
+      { syllable: 'BL_E', answer: 'BLUE', image: '🔵', options: ['U', 'A', 'O'] },
+      { syllable: 'GR_EN', answer: 'GREEN', image: '🟢', options: ['E', 'A', 'I'] },
+      { syllable: 'Y_LLOW', answer: 'YELLOW', image: '🟡', options: ['E', 'A', 'O'] }
+    ]
+  },
+  {
+    id: 'temp-fill',
+    name: 'Temperature (Fill in)',
+    isPreset: true,
+    type: 'fill-in',
+    tier: 'Intermediate',
+    isChallenge: true,
+    cards: [
+      { syllable: 'H_T', answer: 'HOT', image: '☀️', options: ['O', 'A', 'U'] },
+      { syllable: 'C_LD', answer: 'COLD', image: '❄️', options: ['O', 'A', 'U'] },
+      { syllable: 'R_IN', answer: 'RAIN', image: '🌧️', options: ['A', 'E', 'I'] },
+      { syllable: 'SN_W', answer: 'SNOW', image: '🌨️', options: ['O', 'A', 'U'] }
     ]
   }
 ];
@@ -284,6 +464,13 @@ export default function App() {
     if (holdTriggeredRef.current) return;
     handleAudioAction();
   };
+
+  const currentOptions = sessionCards[currentIndex]?.options && sessionCards[currentIndex]?.answer 
+    ? [...sessionCards[currentIndex].options, sessionCards[currentIndex].answer.split('').filter(char => sessionCards[currentIndex].syllable.includes('_')).join('') || sessionCards[currentIndex].answer]
+        .filter((v, i, a) => a.indexOf(v) === i)
+        .slice(0, 4)
+        .sort()
+    : [];
 
   useEffect(() => {
     let timeout: ReturnType<typeof setTimeout>;
@@ -446,6 +633,8 @@ export default function App() {
       setDirection(-1);
       setCurrentIndex((prev) => prev - 1);
       setIsRevealed(false);
+    } else {
+      setView('library');
     }
   };
 
@@ -552,6 +741,7 @@ export default function App() {
                       <Star size={20} className={tier === 'Beginner' ? 'text-yellow-500 fill-yellow-500' : tier === 'Intermediate' ? 'text-orange-500 fill-orange-500' : 'text-red-500 fill-red-500'} />
                       {tier}
                     </h2>
+                    
                     {tier === 'Beginner' && (
                       <div className="flex gap-2 mb-4">
                         <button 
@@ -568,8 +758,9 @@ export default function App() {
                         </button>
                       </div>
                     )}
+
                     <div className="grid gap-3">
-                      {tierSets.map((set) => (
+                      {tierSets.filter(s => !s.isChallenge).map((set) => (
                         <button
                           key={set.id}
                           onClick={() => handleStartStudy(set)}
@@ -590,6 +781,28 @@ export default function App() {
                         </button>
                       ))}
                     </div>
+
+                    {tier === 'Intermediate' && tierSets.some(s => s.isChallenge) && (
+                      <div className="mt-8">
+                        <h3 className="text-sm font-black text-on-surface-variant mb-4 flex items-center gap-2 uppercase tracking-widest px-2">
+                          <Trophy size={16} className="text-tertiary" /> Challenge
+                        </h3>
+                        <div className="grid grid-cols-2 gap-3">
+                          {tierSets.filter(s => s.isChallenge).map((set) => (
+                            <button
+                              key={set.id}
+                              onClick={() => handleStartStudy(set)}
+                              className="p-4 bg-tertiary-container/30 border-4 border-tertiary-fixed-dim rounded-2xl flex flex-col items-center justify-center gap-2 chunky-shadow-secondary active-press group text-center"
+                            >
+                              <div className="h-10 w-10 rounded-xl bg-tertiary-container flex items-center justify-center text-on-tertiary-container">
+                                <Star size={20} />
+                              </div>
+                              <h4 className="font-bold text-sm leading-tight">{set.name}</h4>
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </section>
                 );
               })}
@@ -805,30 +1018,39 @@ export default function App() {
                         </motion.h1>
                         
                         {!isRevealed && sessionCards[currentIndex]?.options && (
-                          <div className="flex justify-center gap-4 mt-8 w-full max-w-md">
-                            {sessionCards[currentIndex].options.map((opt, i) => (
-                              <motion.button
-                                key={i}
-                                onClick={() => {
-                                  if (sessionCards[currentIndex].answer?.toUpperCase().includes(opt.toUpperCase())) {
-                                    setIsRevealed(true);
-                                  } else {
-                                    setWrongGuessId(i);
-                                    if ('vibrate' in navigator) navigator.vibrate(100);
-                                    setTimeout(() => setWrongGuessId(null), 400);
-                                  }
-                                }}
-                                animate={wrongGuessId === i ? { x: [-10, 10, -10, 10, 0] } : {}}
-                                transition={{ duration: 0.4 }}
-                                className={`h-16 w-16 sm:h-20 sm:w-20 rounded-2xl font-black text-3xl sm:text-4xl border-4 chunky-shadow-card active-press ${wrongGuessId === i ? 'bg-error-container text-on-error-container border-error' : 'bg-surface-container text-on-surface border-surface-variant hover:bg-surface-container-high'}`}
-                              >
-                                {opt}
-                              </motion.button>
-                            ))}
+                          <div className="flex justify-center flex-wrap gap-4 mt-8 w-full max-w-md">
+                            {(() => {
+                              const missingPart = sessionCards[currentIndex].answer && sessionCards[currentIndex].syllable.indexOf('_') !== -1
+                                ? sessionCards[currentIndex].answer[sessionCards[currentIndex].syllable.indexOf('_')]
+                                : sessionCards[currentIndex].answer;
+                              
+                              return [...(sessionCards[currentIndex].options || []), missingPart]
+                                .filter((v, i, a) => v && a.indexOf(v) === i)
+                                .sort(() => Math.random() - 0.5)
+                                .map((opt, i) => (
+                                  <motion.button
+                                    key={`${currentIndex}-${opt}-${i}`}
+                                    onClick={() => {
+                                      if (opt?.toUpperCase() === missingPart?.toUpperCase()) {
+                                        setIsRevealed(true);
+                                      } else {
+                                        setWrongGuessId(i);
+                                        if ('vibrate' in navigator) navigator.vibrate(100);
+                                        setTimeout(() => setWrongGuessId(null), 400);
+                                      }
+                                    }}
+                                    animate={wrongGuessId === i ? { x: [-10, 10, -10, 10, 0] } : {}}
+                                    transition={{ duration: 0.4 }}
+                                    className={`h-16 w-16 sm:h-20 sm:w-20 rounded-2xl font-black text-3xl sm:text-4xl border-4 chunky-shadow-card active-press ${wrongGuessId === i ? 'bg-error-container text-on-error-container border-error' : 'bg-surface-container text-on-surface border-surface-variant hover:bg-surface-container-high'}`}
+                                  >
+                                    {opt}
+                                  </motion.button>
+                                ));
+                            })()}
                           </div>
                         )}
                       </div>
-                    ) : appMode === 'write' ? (
+                    ) : (appMode === 'write' && activeSet.tier === 'Beginner') ? (
                       <>
                         <div className="w-full h-[300px] sm:h-[340px] relative pointer-events-auto">
                            <TracingCanvas text={isLowerCase ? sessionCards[currentIndex]?.syllable?.toLowerCase() : sessionCards[currentIndex]?.syllable} onClearRef={ref => clearCanvasRef.current = ref} onDrawEnd={() => { if (!isRecording && !isPlaying) handleAudioAction(false, true); }} />
@@ -840,12 +1062,22 @@ export default function App() {
                         </div>
                       </>
                     ) : (
-                      <>
+                      <div className="flex flex-col items-center justify-center gap-6">
+                        {sessionCards[currentIndex]?.image && (
+                          <motion.div 
+                            className="text-6xl sm:text-[100px] drop-shadow-sm mb-2"
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.4 }}
+                          >
+                            {sessionCards[currentIndex].image}
+                          </motion.div>
+                        )}
                         <h1 className={`${getFontSizeClass(sessionCards[currentIndex]?.syllable)} leading-none font-black tracking-tighter text-on-surface`}>
                           {isLowerCase ? sessionCards[currentIndex]?.syllable?.toLowerCase() : sessionCards[currentIndex]?.syllable}
                         </h1>
                         
-                        <div className="mt-12 flex items-center justify-center" onPointerLeave={endPress} onMouseLeave={endPress}>
+                        <div className="mt-8 flex items-center justify-center" onPointerLeave={endPress} onMouseLeave={endPress}>
                           <button
                              onPointerDown={startPress}
                              onPointerUp={endPress}
@@ -856,8 +1088,8 @@ export default function App() {
                              : 'bg-surface-container-high text-on-surface-variant border-surface-variant chunky-shadow-sm'}`}
                           >
                              {isRecording ? <Square size={28} className="fill-current" /> :
-                              hasAudio ? <Volume2 size={28} className={isPlaying ? "animate-pulse" : ""} /> :
-                              <Mic size={28} />}
+                               hasAudio ? <Volume2 size={28} className={isPlaying ? "animate-pulse" : ""} /> :
+                               <Mic size={28} />}
                               
                              {!hasAudio && !isRecording && (
                                <span className="absolute -bottom-10 bg-surface-variant text-on-surface-variant text-xs font-bold px-3 py-1 rounded-lg opacity-0 md:group-hover:opacity-100 transition-opacity pointer-events-none whitespace-nowrap">
@@ -871,7 +1103,7 @@ export default function App() {
                              )}
                           </button>
                         </div>
-                      </>
+                      </div>
                     )}
                   </motion.div>
                 </AnimatePresence>
@@ -883,9 +1115,8 @@ export default function App() {
                 <div className="flex gap-4 w-full">
                   <button
                     onClick={handleBack}
-                    disabled={currentIndex === 0}
                     className={`flex-1 h-16 rounded-2xl flex items-center justify-center gap-2 font-black text-xl border-4 active-press transition-all
-                      ${currentIndex === 0 ? 'bg-surface-container-low text-on-surface-variant opacity-50' : 'bg-surface-container shadow-[0_4px_0_0_theme(colors.surface-variant)]'}`}
+                      ${currentIndex === 0 && activeSet.type !== 'fill-in' ? 'bg-surface-container-low text-on-surface-variant' : 'bg-surface-container shadow-[0_4px_0_0_theme(colors.surface-variant)]'}`}
                   >
                     <ArrowLeft size={24} strokeWidth={3} /> Back
                   </button>
@@ -893,7 +1124,7 @@ export default function App() {
                     onClick={handleNext}
                     className={`flex-1 h-16 rounded-2xl flex items-center justify-center gap-2 font-black text-xl border-4 active-press transition-all bg-tertiary-container text-on-tertiary-container border-tertiary-fixed-dim shadow-[0_4px_0_0_theme(colors.tertiary-fixed-dim)] hover:brightness-105`}
                   >
-                    {currentIndex === sessionCards.length - 1 ? (appMode === 'write' ? 'Done' : 'Finish') : 'Next'} <ArrowRight size={24} strokeWidth={3} />
+                    {currentIndex === sessionCards.length - 1 ? ((appMode === 'write' && activeSet.tier === 'Beginner') ? 'Done' : 'Finish') : 'Next'} <ArrowRight size={24} strokeWidth={3} />
                   </button>
                 </div>
               )}
@@ -960,7 +1191,7 @@ export default function App() {
 
             <div className="w-full max-w-[400px] space-y-4 z-10">
               <button 
-                onClick={() => { setView('study'); setCurrentIndex(0); }}
+                onClick={() => { setView('study'); setCurrentIndex(0); setIsRevealed(false); }}
                 className="w-full h-18 bg-tertiary-container text-on-tertiary-container border-4 border-tertiary-fixed-dim rounded-2xl font-bold text-2xl active-press chunky-shadow-secondary hover:brightness-105"
               >
                 Try Again
