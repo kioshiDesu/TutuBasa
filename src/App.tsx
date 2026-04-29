@@ -167,10 +167,19 @@ export default function App() {
   const [editingSet, setEditingSet] = useState<CardSet | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
+  const [isLoading, setIsLoading] = useState(true);
+
   useEffect(() => {
+    // Initial loading / splash duration
+    const splashTimer = setTimeout(() => {
+      setIsLoading(false);
+    }, 2500);
+
     if (Capacitor.isNativePlatform()) {
-      StatusBar.hide().catch(e => console.warn('StatusBar hide failed', e));
+      StatusBar.show().catch(e => console.warn('StatusBar show failed', e));
     }
+
+    return () => clearTimeout(splashTimer);
   }, []);
 
   const clearCanvasRef = useRef<(() => void) | null>(null);
@@ -465,7 +474,52 @@ export default function App() {
   return (
     <div className={`flex flex-col h-screen max-w-full overflow-hidden bg-background transition-colors duration-300 ${isDarkMode ? 'dark' : ''}`}>
       <AnimatePresence mode="wait">
-        {view === 'library' && (
+        {isLoading ? (
+          <motion.div
+            key="splash"
+            initial={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background"
+          >
+            <motion.div
+              animate={{ 
+                scale: [1, 1.1, 1],
+                rotate: [0, 5, -5, 0]
+              }}
+              transition={{ 
+                duration: 2,
+                repeat: Infinity,
+                ease: "easeInOut"
+              }}
+              className="text-[120px] drop-shadow-2xl"
+            >
+              📚
+            </motion.div>
+            <motion.h1 
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.3 }}
+              className="mt-8 text-4xl font-black text-primary tracking-tighter"
+            >
+              Abakada
+            </motion.h1>
+            <motion.div
+              className="mt-4 flex gap-1"
+            >
+              {[0, 1, 2].map((i) => (
+                <motion.div
+                  key={i}
+                  animate={{ scale: [1, 1.5, 1], opacity: [0.3, 1, 0.3] }}
+                  transition={{ duration: 1, repeat: Infinity, delay: i * 0.2 }}
+                  className="w-2 h-2 rounded-full bg-secondary"
+                />
+              ))}
+            </motion.div>
+          </motion.div>
+        ) : (
+          <>
+            {view === 'library' && (
           <motion.div 
             key="library"
             initial={{ opacity: 0, y: 20 }}
@@ -989,6 +1043,8 @@ export default function App() {
               </div>
             </main>
           </motion.div>
+        )}
+          </>
         )}
       </AnimatePresence>
     </div>
