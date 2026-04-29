@@ -11,6 +11,9 @@ import { TracingCanvas } from './components/TracingCanvas';
 
 interface Flashcard {
   syllable: string;
+  image?: string;
+  answer?: string;
+  options?: string[];
 }
 
 interface CardSet {
@@ -18,6 +21,8 @@ interface CardSet {
   name: string;
   cards: Flashcard[];
   isPreset?: boolean;
+  type?: 'read-write' | 'fill-in';
+  tier?: 'Beginner' | 'Intermediate' | 'Expert';
 }
 
 const PRESET_SETS: CardSet[] = [
@@ -25,6 +30,7 @@ const PRESET_SETS: CardSet[] = [
     id: 'abakada-phonetic',
     name: 'ABAKADA',
     isPreset: true,
+    tier: 'Beginner',
     cards: [
       { syllable: 'Ba' }, { syllable: 'Da' }, { syllable: 'Fa' },
       { syllable: 'Ga' }, { syllable: 'Ha' }, { syllable: 'Ka' },
@@ -38,6 +44,7 @@ const PRESET_SETS: CardSet[] = [
     id: 'consonants-only',
     name: 'Consonants',
     isPreset: true,
+    tier: 'Beginner',
     cards: [
       { syllable: 'B' }, { syllable: 'C' }, { syllable: 'D' },
       { syllable: 'F' }, { syllable: 'G' }, { syllable: 'H' },
@@ -52,6 +59,7 @@ const PRESET_SETS: CardSet[] = [
     id: 'vowels',
     name: 'Vowels',
     isPreset: true,
+    tier: 'Beginner',
     cards: [
       { syllable: 'A' }, { syllable: 'E' }, { syllable: 'I' },
       { syllable: 'O' }, { syllable: 'U' }
@@ -61,6 +69,7 @@ const PRESET_SETS: CardSet[] = [
     id: 'abc-eng',
     name: 'ABC\'s',
     isPreset: true,
+    tier: 'Beginner',
     cards: Array.from('ABCDEFGHIJKLMNOPQRSTUVWXYZ').map(char => ({
       syllable: char
     })),
@@ -69,12 +78,14 @@ const PRESET_SETS: CardSet[] = [
     id: 'numbers',
     name: 'Numbers',
     isPreset: true,
+    tier: 'Beginner',
     cards: Array.from({length: 10}, (_, i) => ({ syllable: String(i + 1) })),
   },
   {
     id: 'animals',
     name: 'Animals',
     isPreset: true,
+    tier: 'Beginner',
     cards: [
       { syllable: 'Ant' }, { syllable: 'Bear' }, { syllable: 'Cat' },
       { syllable: 'Dog' }, { syllable: 'Elephant' }, { syllable: 'Fish' },
@@ -83,6 +94,53 @@ const PRESET_SETS: CardSet[] = [
       { syllable: 'Monkey' }, { syllable: 'Owl' }, { syllable: 'Penguin' },
       { syllable: 'Rabbit' }, { syllable: 'Snake' }, { syllable: 'Tiger' },
       { syllable: 'Whale' }, { syllable: 'Zebra' }
+    ]
+  },
+  {
+    id: 'animals-fill',
+    name: 'Animals (Fill in)',
+    isPreset: true,
+    type: 'fill-in',
+    tier: 'Intermediate',
+    cards: [
+      { syllable: 'A_T', answer: 'ANT', image: '🐜', options: ['N', 'M', 'R'] },
+      { syllable: 'B_T', answer: 'BAT', image: '🦇', options: ['A', 'E', 'O'] },
+      { syllable: 'C_T', answer: 'CAT', image: '🐈', options: ['A', 'U', 'I'] },
+      { syllable: 'D_G', answer: 'DOG', image: '🐕', options: ['O', 'A', 'E'] },
+      { syllable: 'P_G', answer: 'PIG', image: '🐖', options: ['I', 'U', 'O'] },
+      { syllable: 'C_W', answer: 'COW', image: '🐄', options: ['O', 'A', 'E'] },
+      { syllable: 'B_G', answer: 'BUG', image: '🐛', options: ['U', 'A', 'I'] },
+      { syllable: 'F_X', answer: 'FOX', image: '🦊', options: ['O', 'E', 'A'] },
+      { syllable: 'O_L', answer: 'OWL', image: '🦉', options: ['W', 'M', 'B'] },
+      { syllable: 'H_N', answer: 'HEN', image: '🐔', options: ['E', 'A', 'I'] },
+      { syllable: 'B_AR', answer: 'BEAR', image: '🐻', options: ['E', 'A', 'O'] },
+      { syllable: 'B_E', answer: 'BEE', image: '🐝', options: ['E', 'A', 'O'] },
+      { syllable: 'R_T', answer: 'RAT', image: '🐀', options: ['A', 'E', 'I'] },
+      { syllable: 'M_NKEY', answer: 'MONKEY', image: '🐒', options: ['O', 'A', 'E'] },
+      { syllable: 'D_CK', answer: 'DUCK', image: '🦆', options: ['U', 'A', 'O'] },
+      { syllable: 'FR_G', answer: 'FROG', image: '🐸', options: ['O', 'A', 'U'] },
+      { syllable: 'B_RD', answer: 'BIRD', image: '🐦', options: ['I', 'E', 'A'] },
+      { syllable: 'L_ON', answer: 'LION', image: '🦁', options: ['I', 'E', 'A'] },
+      { syllable: 'W_LF', answer: 'WOLF', image: '🐺', options: ['O', 'A', 'E'] }
+    ]
+  },
+  {
+    id: 'fruits-fill',
+    name: 'Fruits (Fill in)',
+    isPreset: true,
+    type: 'fill-in',
+    tier: 'Intermediate',
+    cards: [
+      { syllable: 'AP_LE', answer: 'APPLE', image: '🍎', options: ['P', 'B', 'D'] },
+      { syllable: 'B_NANA', answer: 'BANANA', image: '🍌', options: ['A', 'E', 'I'] },
+      { syllable: 'CH_RRY', answer: 'CHERRY', image: '🍒', options: ['E', 'A', 'O'] },
+      { syllable: 'GR_PE', answer: 'GRAPE', image: '🍇', options: ['A', 'E', 'I'] },
+      { syllable: 'M_LON', answer: 'MELON', image: '🍈', options: ['E', 'A', 'O'] },
+      { syllable: 'P_ACH', answer: 'PEACH', image: '🍑', options: ['E', 'A', 'I'] },
+      { syllable: 'P_AR', answer: 'PEAR', image: '🍐', options: ['E', 'A', 'O'] },
+      { syllable: 'PL_M', answer: 'PLUM', image: '🍑', options: ['U', 'A', 'E'] },
+      { syllable: 'K_WI', answer: 'KIWI', image: '🥝', options: ['I', 'E', 'A'] },
+      { syllable: 'L_MON', answer: 'LEMON', image: '🍋', options: ['E', 'A', 'O'] }
     ]
   }
 ];
@@ -99,6 +157,8 @@ export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [appMode, setAppMode] = useState<'read' | 'write'>('read');
   const [isLowerCase, setIsLowerCase] = useState(false);
+  const [isRevealed, setIsRevealed] = useState(false);
+  const [wrongGuessId, setWrongGuessId] = useState<number | null>(null);
   const [selectedVowel, setSelectedVowel] = useState('a');
   const [isVowelMenuOpen, setIsVowelMenuOpen] = useState(false);
   
@@ -209,6 +269,16 @@ export default function App() {
   };
 
   useEffect(() => {
+    let timeout: ReturnType<typeof setTimeout>;
+    if (activeSet.type === 'fill-in' && isRevealed) {
+      timeout = setTimeout(() => {
+        handleNext();
+      }, 1500);
+    }
+    return () => clearTimeout(timeout);
+  }, [isRevealed, activeSet.type, currentIndex]);
+
+  useEffect(() => {
     const saved = localStorage.getItem('abakada_user_sets');
     if (saved) setUserSets(JSON.parse(saved));
     
@@ -238,6 +308,7 @@ export default function App() {
     setSessionCards(shuffleArray(sessionCards));
     setCurrentIndex(0);
     setDirection(0);
+    setIsRevealed(false);
   };
 
   const toggleDarkMode = () => {
@@ -251,71 +322,6 @@ export default function App() {
   const saveToStorage = (sets: CardSet[]) => {
     localStorage.setItem('abakada_user_sets', JSON.stringify(sets));
   };
-
-  const playClickSound = () => {
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(600, ctx.currentTime);
-      osc.frequency.exponentialRampToValueAtTime(200, ctx.currentTime + 0.1);
-      gain.gain.setValueAtTime(0.3, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start();
-      osc.stop(ctx.currentTime + 0.1);
-    } catch (e) {
-      // Ignore
-    }
-  };
-
-  const playCompletionSound = () => {
-    try {
-      const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-      if (!AudioCtx) return;
-      const ctx = new AudioCtx();
-      const playNote = (freq: number, startTime: number, duration: number) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.5, startTime);
-        gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(startTime);
-        osc.stop(startTime + duration);
-      };
-      
-      const now = ctx.currentTime;
-      playNote(523.25, now, 0.15); // C5
-      playNote(659.25, now + 0.15, 0.15); // E5
-      playNote(783.99, now + 0.3, 0.15); // G5
-      playNote(1046.50, now + 0.45, 0.5); // C6
-    } catch (e) {
-      // Ignore
-    }
-  };
-
-  useEffect(() => {
-    const handleGlobalClick = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      const btn = target.closest('button');
-      if (btn) {
-        if (btn.classList.contains('finish-btn')) {
-          playCompletionSound();
-        } else {
-          playClickSound();
-        }
-      }
-    };
-    document.addEventListener('click', handleGlobalClick);
-    return () => document.removeEventListener('click', handleGlobalClick);
-  }, []);
 
   const getFontSizeClass = (text: string) => {
     const len = text?.length || 0;
@@ -338,6 +344,7 @@ export default function App() {
     setActiveSet({ ...set, cards: finalCards });
     setSessionCards(finalCards);
     setCurrentIndex(0);
+    setIsRevealed(false);
     setView('study');
   };
 
@@ -350,6 +357,7 @@ export default function App() {
     setActiveSet({ ...activeSet, cards: newCards });
     setCurrentIndex(0);
     setDirection(0);
+    setIsRevealed(false);
     setIsVowelMenuOpen(false);
   };
 
@@ -410,9 +418,9 @@ export default function App() {
     if (currentIndex < sessionCards.length - 1) {
       setDirection(1);
       setCurrentIndex((prev) => prev + 1);
+      setIsRevealed(false);
     } else {
-      if (appMode === 'write') setView('library');
-      else setView('congrats');
+      setView('congrats');
     }
   };
 
@@ -420,6 +428,7 @@ export default function App() {
     if (currentIndex > 0) {
       setDirection(-1);
       setCurrentIndex((prev) => prev - 1);
+      setIsRevealed(false);
     }
   };
 
@@ -469,51 +478,59 @@ export default function App() {
                   {isDarkMode ? <Sun className="text-yellow-500" size={28} /> : <Moon className="text-secondary" size={28} />}
                 </button>
               </div>
-              <div className="flex gap-2">
-                 <button 
-                   onClick={() => setAppMode('read')}
-                   className={`flex-1 h-14 rounded-2xl flex items-center justify-center gap-2 font-bold text-lg border-4 transition-all active-press ${appMode === 'read' ? 'bg-primary text-on-primary border-primary-fixed-dim chunky-shadow-sm' : 'bg-surface-container text-on-surface-variant border-surface-variant text-opacity-70'}`}
-                 >
-                   <BookOpen size={20} /> Read
-                 </button>
-                 <button 
-                   onClick={() => setAppMode('write')}
-                   className={`flex-1 h-14 rounded-2xl flex items-center justify-center gap-2 font-bold text-lg border-4 transition-all active-press ${appMode === 'write' ? 'bg-tertiary-container text-on-tertiary-container border-tertiary-fixed-dim chunky-shadow-card' : 'bg-surface-container text-on-surface-variant border-surface-variant text-opacity-70'}`}
-                 >
-                   <Edit3 size={20} /> Write
-                 </button>
-              </div>
             </header>
 
             <main className="flex-1 overflow-y-auto px-6 pb-24 space-y-8">
-              <section>
-                <h2 className="text-lg font-black text-on-surface mb-4 flex items-center gap-2">
-                  <Star size={20} className="text-yellow-500 fill-yellow-500" />
-                  Presets
-                </h2>
-                <div className="grid gap-3">
-                  {PRESET_SETS.map((set) => (
-                    <button
-                      key={set.id}
-                      onClick={() => handleStartStudy(set)}
-                      className="w-full p-5 bg-surface-container-lowest border-4 border-surface-variant rounded-2xl flex items-center justify-between chunky-shadow-card active-press group"
-                    >
-                      <div className="flex items-center gap-4">
-                        <div className="h-12 w-12 rounded-xl bg-secondary-fixed flex items-center justify-center text-on-secondary-container">
-                          <BookOpen size={24} />
-                        </div>
-                        <div className="text-left">
-                          <h3 className="font-bold text-xl">{set.name}</h3>
-                          <p className="text-on-surface-variant text-sm font-semibold">{set.cards.length} Cards</p>
-                        </div>
+              {['Beginner', 'Intermediate', 'Expert'].map(tier => {
+                const tierSets = PRESET_SETS.filter(set => set.tier === tier);
+                if (tierSets.length === 0) return null;
+                return (
+                  <section key={tier}>
+                    <h2 className="text-lg font-black text-on-surface mb-4 flex items-center gap-2">
+                      <Star size={20} className={tier === 'Beginner' ? 'text-yellow-500 fill-yellow-500' : tier === 'Intermediate' ? 'text-orange-500 fill-orange-500' : 'text-red-500 fill-red-500'} />
+                      {tier}
+                    </h2>
+                    {tier === 'Beginner' && (
+                      <div className="flex gap-2 mb-4">
+                        <button 
+                          onClick={() => setAppMode('read')}
+                          className={`flex-1 h-14 rounded-2xl flex items-center justify-center gap-2 font-bold text-lg border-4 transition-all active-press ${appMode === 'read' ? 'bg-primary text-on-primary border-primary-fixed-dim chunky-shadow-sm' : 'bg-surface-container text-on-surface-variant border-surface-variant text-opacity-70'}`}
+                        >
+                          <BookOpen size={20} /> Read
+                        </button>
+                        <button 
+                          onClick={() => setAppMode('write')}
+                          className={`flex-1 h-14 rounded-2xl flex items-center justify-center gap-2 font-bold text-lg border-4 transition-all active-press ${appMode === 'write' ? 'bg-tertiary-container text-on-tertiary-container border-tertiary-fixed-dim chunky-shadow-card' : 'bg-surface-container text-on-surface-variant border-surface-variant text-opacity-70'}`}
+                        >
+                          <Edit3 size={20} /> Write
+                        </button>
                       </div>
-                      <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-surface-container group-hover:bg-tertiary-container transition-colors">
-                        <Play size={20} className="text-on-surface group-hover:text-on-tertiary-container" />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </section>
+                    )}
+                    <div className="grid gap-3">
+                      {tierSets.map((set) => (
+                        <button
+                          key={set.id}
+                          onClick={() => handleStartStudy(set)}
+                          className="w-full p-5 bg-surface-container-lowest border-4 border-surface-variant rounded-2xl flex items-center justify-between chunky-shadow-card active-press group"
+                        >
+                          <div className="flex items-center gap-4">
+                            <div className="h-12 w-12 rounded-xl bg-secondary-fixed flex items-center justify-center text-on-secondary-container">
+                              <BookOpen size={24} />
+                            </div>
+                            <div className="text-left">
+                              <h3 className="font-bold text-xl">{set.name}</h3>
+                              <p className="text-on-surface-variant text-sm font-semibold">{set.cards.length} Cards</p>
+                            </div>
+                          </div>
+                          <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-surface-container group-hover:bg-tertiary-container transition-colors">
+                            <Play size={20} className="text-on-surface group-hover:text-on-tertiary-container" />
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </section>
+                );
+              })}
 
               <section>
                 <div className="flex justify-between items-center mb-4">
@@ -706,7 +723,50 @@ export default function App() {
                     }}
                     className="w-full h-full bg-surface-container-lowest rounded-[40px] border-4 border-surface-variant chunky-shadow-card flex flex-col items-center justify-center p-6 text-center overflow-hidden relative"
                   >
-                    {appMode === 'write' ? (
+                    {activeSet.type === 'fill-in' ? (
+                      <div className="flex flex-col items-center justify-center gap-8 w-full">
+                        {sessionCards[currentIndex]?.image && (
+                          <motion.div 
+                            className="text-8xl sm:text-[120px] drop-shadow-md"
+                            animate={isRevealed ? { scale: [1, 1.2, 1], rotate: [0, -10, 10, 0] } : {}}
+                            transition={{ duration: 0.5, ease: "easeInOut" }}
+                          >
+                            {sessionCards[currentIndex].image}
+                          </motion.div>
+                        )}
+                        <motion.h1 
+                          className={`text-6xl sm:text-8xl font-black tracking-widest mt-4 ${isRevealed ? 'text-primary' : 'text-on-surface'}`}
+                          animate={isRevealed ? { scale: [1, 1.1, 1] } : {}}
+                          transition={{ duration: 0.4, ease: "easeInOut" }}
+                        >
+                          {isRevealed ? sessionCards[currentIndex]?.answer : sessionCards[currentIndex]?.syllable}
+                        </motion.h1>
+                        
+                        {!isRevealed && sessionCards[currentIndex]?.options && (
+                          <div className="flex justify-center gap-4 mt-8 w-full max-w-md">
+                            {sessionCards[currentIndex].options.map((opt, i) => (
+                              <motion.button
+                                key={i}
+                                onClick={() => {
+                                  if (sessionCards[currentIndex].answer?.toUpperCase().includes(opt.toUpperCase())) {
+                                    setIsRevealed(true);
+                                  } else {
+                                    setWrongGuessId(i);
+                                    if ('vibrate' in navigator) navigator.vibrate(100);
+                                    setTimeout(() => setWrongGuessId(null), 400);
+                                  }
+                                }}
+                                animate={wrongGuessId === i ? { x: [-10, 10, -10, 10, 0] } : {}}
+                                transition={{ duration: 0.4 }}
+                                className={`h-16 w-16 sm:h-20 sm:w-20 rounded-2xl font-black text-3xl sm:text-4xl border-4 chunky-shadow-card active-press ${wrongGuessId === i ? 'bg-error-container text-on-error-container border-error' : 'bg-surface-container text-on-surface border-surface-variant hover:bg-surface-container-high'}`}
+                              >
+                                {opt}
+                              </motion.button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    ) : appMode === 'write' ? (
                       <>
                         <div className="w-full h-[300px] sm:h-[340px] relative pointer-events-auto">
                            <TracingCanvas text={isLowerCase ? sessionCards[currentIndex]?.syllable?.toLowerCase() : sessionCards[currentIndex]?.syllable} onClearRef={ref => clearCanvasRef.current = ref} onDrawEnd={() => { if (!isRecording && !isPlaying) handleAudioAction(false, true); }} />
@@ -757,22 +817,24 @@ export default function App() {
             </main>
 
             <footer className="px-6 py-6 pb-12 flex flex-col gap-4 max-w-[500px] mx-auto w-full">
-              <div className="flex gap-4 w-full">
-                <button
-                  onClick={handleBack}
-                  disabled={currentIndex === 0}
-                  className={`flex-1 h-16 rounded-2xl flex items-center justify-center gap-2 font-black text-xl border-4 active-press transition-all
-                    ${currentIndex === 0 ? 'bg-surface-container-low text-on-surface-variant opacity-50' : 'bg-surface-container shadow-[0_4px_0_0_theme(colors.surface-variant)]'}`}
-                >
-                  <ArrowLeft size={24} strokeWidth={3} /> Back
-                </button>
-                <button
-                  onClick={handleNext}
-                  className={`flex-1 h-16 rounded-2xl flex items-center justify-center gap-2 font-black text-xl border-4 active-press transition-all bg-tertiary-container text-on-tertiary-container border-tertiary-fixed-dim shadow-[0_4px_0_0_theme(colors.tertiary-fixed-dim)] hover:brightness-105 ${currentIndex === sessionCards.length - 1 ? 'finish-btn' : ''}`}
-                >
-                  {currentIndex === sessionCards.length - 1 ? (appMode === 'write' ? 'Done' : 'Finish') : 'Next'} <ArrowRight size={24} strokeWidth={3} />
-                </button>
-              </div>
+              {activeSet.type !== 'fill-in' && (
+                <div className="flex gap-4 w-full">
+                  <button
+                    onClick={handleBack}
+                    disabled={currentIndex === 0}
+                    className={`flex-1 h-16 rounded-2xl flex items-center justify-center gap-2 font-black text-xl border-4 active-press transition-all
+                      ${currentIndex === 0 ? 'bg-surface-container-low text-on-surface-variant opacity-50' : 'bg-surface-container shadow-[0_4px_0_0_theme(colors.surface-variant)]'}`}
+                  >
+                    <ArrowLeft size={24} strokeWidth={3} /> Back
+                  </button>
+                  <button
+                    onClick={handleNext}
+                    className={`flex-1 h-16 rounded-2xl flex items-center justify-center gap-2 font-black text-xl border-4 active-press transition-all bg-tertiary-container text-on-tertiary-container border-tertiary-fixed-dim shadow-[0_4px_0_0_theme(colors.tertiary-fixed-dim)] hover:brightness-105`}
+                  >
+                    {currentIndex === sessionCards.length - 1 ? (appMode === 'write' ? 'Done' : 'Finish') : 'Next'} <ArrowRight size={24} strokeWidth={3} />
+                  </button>
+                </div>
+              )}
               {activeSet.id === 'numbers' && (
                 <div className="flex justify-center mt-2">
                   <button onClick={handleAddMoreNumbers} className="px-6 py-3 bg-surface-container-low text-on-surface-variant hover:text-on-surface rounded-full text-sm font-bold border-2 border-surface-variant border-dashed hover:bg-surface-variant transition-colors active-press flex items-center gap-2">
@@ -790,41 +852,60 @@ export default function App() {
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={{ opacity: 0, scale: 0.8 }}
-            className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-background"
+            className="flex-1 flex flex-col items-center justify-center p-8 text-center bg-background relative overflow-hidden"
           >
+            {/* Animated Characters */}
+            <div className="absolute inset-0 pointer-events-none flex items-end justify-around pb-8 sm:pb-16 z-0">
+              {['🐶', '🐰', '🦊', '🐼', '🐯', '🐸'].map((emoji, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ y: 200, opacity: 0, rotate: -15 }}
+                  animate={{ y: [0, -60, 0], opacity: 1, rotate: [-15, 15, -15] }}
+                  transition={{ 
+                    y: { repeat: Infinity, duration: 0.6 + (i * 0.15), repeatType: "reverse", ease: "easeOut", delay: i * 0.1 },
+                    rotate: { repeat: Infinity, duration: 1.2 + (i * 0.1), ease: "easeInOut", delay: i * 0.1 },
+                    opacity: { duration: 0.5, delay: i * 0.1 }
+                  }}
+                  className="text-5xl sm:text-7xl drop-shadow-md"
+                >
+                  {emoji}
+                </motion.div>
+              ))}
+            </div>
+
             <motion.div 
               initial={{ rotate: -10, y: 0 }}
               animate={{ rotate: 10, y: [0, -20, 0] }}
               transition={{ repeat: Infinity, duration: 2, repeatType: "reverse" }}
-              className="relative mb-12"
+              className="relative mb-12 z-10"
             >
-              <div className="h-48 w-48 rounded-full bg-yellow-400 border-8 border-yellow-500/20 flex items-center justify-center">
+              <div className="h-48 w-48 rounded-full bg-yellow-400 border-8 border-yellow-500/20 flex items-center justify-center shadow-xl">
                 <Trophy size={100} className="text-white drop-shadow-lg" fill="currentColor" />
               </div>
               <motion.div 
                 animate={{ scale: [1, 1.2, 1] }}
                 transition={{ repeat: Infinity, duration: 1.5 }}
-                className="absolute -top-4 -right-4 bg-tertiary p-4 rounded-full border-4 border-white"
+                className="absolute -top-4 -right-4 bg-tertiary p-4 rounded-full border-4 border-white shadow-lg"
               >
                 <Star size={32} className="text-white" fill="currentColor" />
               </motion.div>
             </motion.div>
 
-            <h1 className="text-5xl font-black text-yellow-500 mb-4 tracking-tight">Amazing!</h1>
-            <p className="text-2xl font-bold text-on-surface-variant mb-12">
+            <h1 className="text-5xl font-black text-yellow-500 mb-4 tracking-tight z-10 drop-shadow-sm">Amazing!</h1>
+            <p className="text-2xl font-bold text-on-surface-variant mb-12 z-10">
               You finished the <span className="text-secondary">{activeSet.name}</span> set!
             </p>
 
-            <div className="w-full max-w-[400px] space-y-4">
+            <div className="w-full max-w-[400px] space-y-4 z-10">
               <button 
                 onClick={() => { setView('study'); setCurrentIndex(0); }}
-                className="w-full h-18 bg-tertiary-container text-on-tertiary-container border-4 border-tertiary-fixed-dim rounded-2xl font-bold text-2xl active-press chunky-shadow-secondary"
+                className="w-full h-18 bg-tertiary-container text-on-tertiary-container border-4 border-tertiary-fixed-dim rounded-2xl font-bold text-2xl active-press chunky-shadow-secondary hover:brightness-105"
               >
                 Try Again
               </button>
               <button 
                 onClick={() => setView('library')}
-                className="w-full h-18 bg-surface-container text-on-surface border-4 border-surface-variant rounded-2xl font-bold text-2xl active-press"
+                className="w-full h-18 bg-surface-container text-on-surface border-4 border-surface-variant rounded-2xl font-bold text-2xl active-press hover:bg-surface-variant transition-colors"
               >
                 Back to Library
               </button>
