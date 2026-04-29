@@ -5,6 +5,8 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { StatusBar } from '@capacitor/status-bar';
+import { Capacitor } from '@capacitor/core';
 import { X, Settings, Star, ArrowLeft, ArrowRight, Plus, Trash2, Edit3, BookOpen, ChevronRight, Play, Trophy, Moon, Sun, Shuffle, Mic, Square, Volume2, RotateCcw } from 'lucide-react';
 import { saveAudio, getAudio } from './lib/audioDB';
 import { TracingCanvas } from './components/TracingCanvas';
@@ -164,6 +166,12 @@ export default function App() {
   
   const [editingSet, setEditingSet] = useState<CardSet | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      StatusBar.hide().catch(e => console.warn('StatusBar hide failed', e));
+    }
+  }, []);
 
   const clearCanvasRef = useRef<(() => void) | null>(null);
 

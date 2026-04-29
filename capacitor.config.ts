@@ -6,6 +6,12 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     androidScheme: 'https'
+  },
+  android: {
+    buildOptions: {
+      keystorePath: null,
+      releaseType: 'debug'
+    }
   }
 };
 
