@@ -24,8 +24,9 @@ interface CardSet {
   cards: Flashcard[];
   isPreset?: boolean;
   type?: 'read-write' | 'fill-in';
-  tier?: 'Beginner' | 'Intermediate' | 'Expert';
+  tier?: 'Beginner' | 'Intermediate' | 'Expert' | 'Challenge';
   isChallenge?: boolean;
+  isGame?: boolean;
 }
 
 const PRESET_SETS: CardSet[] = [
@@ -172,11 +173,19 @@ const PRESET_SETS: CardSet[] = [
     ]
   },
   {
+    id: 'pop-words-game',
+    name: 'Pop Words',
+    isPreset: true,
+    tier: 'Challenge',
+    isGame: true,
+    cards: [] // Will pull from intermediate sets dynamically
+  },
+  {
     id: 'numbers-challenge',
-    name: 'Numbers Challenge',
+    name: 'Numbers',
     isPreset: true,
     type: 'fill-in',
-    tier: 'Intermediate',
+    tier: 'Challenge',
     isChallenge: true,
     cards: [
       { syllable: 'One', answer: '1', options: ['2', '3', '0'] },
@@ -193,10 +202,10 @@ const PRESET_SETS: CardSet[] = [
   },
   {
     id: 'animals-fill',
-    name: 'Animals (Fill in)',
+    name: 'Animals',
     isPreset: true,
     type: 'fill-in',
-    tier: 'Intermediate',
+    tier: 'Challenge',
     isChallenge: true,
     cards: [
       { syllable: 'A_T', answer: 'ANT', image: '🐜', options: ['N', 'M', 'R'] },
@@ -225,10 +234,10 @@ const PRESET_SETS: CardSet[] = [
   },
   {
     id: 'fruits-fill',
-    name: 'Fruits (Fill in)',
+    name: 'Fruits',
     isPreset: true,
     type: 'fill-in',
-    tier: 'Intermediate',
+    tier: 'Challenge',
     isChallenge: true,
     cards: [
       { syllable: 'AP_LE', answer: 'APPLE', image: '🍎', options: ['P', 'B', 'D'] },
@@ -249,10 +258,10 @@ const PRESET_SETS: CardSet[] = [
   },
   {
     id: 'veggies-fill',
-    name: 'Vegetables (Fill in)',
+    name: 'Vegetables',
     isPreset: true,
     type: 'fill-in',
-    tier: 'Intermediate',
+    tier: 'Challenge',
     isChallenge: true,
     cards: [
       { syllable: 'C_RROT', answer: 'CARROT', image: '🥕', options: ['A', 'E', 'O'] },
@@ -268,10 +277,10 @@ const PRESET_SETS: CardSet[] = [
   },
   {
     id: 'foods-fill',
-    name: 'Foods (Fill in)',
+    name: 'Foods',
     isPreset: true,
     type: 'fill-in',
-    tier: 'Intermediate',
+    tier: 'Challenge',
     isChallenge: true,
     cards: [
       { syllable: 'B_RGER', answer: 'BURGER', image: '🍔', options: ['U', 'A', 'E'] },
@@ -286,10 +295,10 @@ const PRESET_SETS: CardSet[] = [
   },
   {
     id: 'flowers-fill',
-    name: 'Flowers (Fill in)',
+    name: 'Flowers',
     isPreset: true,
     type: 'fill-in',
-    tier: 'Intermediate',
+    tier: 'Challenge',
     isChallenge: true,
     cards: [
       { syllable: 'R_SE', answer: 'ROSE', image: '🌹', options: ['O', 'A', 'E'] },
@@ -299,10 +308,10 @@ const PRESET_SETS: CardSet[] = [
   },
   {
     id: 'colors-fill',
-    name: 'Colors (Fill in)',
+    name: 'Colors',
     isPreset: true,
     type: 'fill-in',
-    tier: 'Intermediate',
+    tier: 'Challenge',
     isChallenge: true,
     cards: [
       { syllable: 'R_D', answer: 'RED', image: '🔴', options: ['E', 'A', 'O'] },
@@ -313,10 +322,10 @@ const PRESET_SETS: CardSet[] = [
   },
   {
     id: 'temp-fill',
-    name: 'Temperature (Fill in)',
+    name: 'Temperature',
     isPreset: true,
     type: 'fill-in',
-    tier: 'Intermediate',
+    tier: 'Challenge',
     isChallenge: true,
     cards: [
       { syllable: 'H_T', answer: 'HOT', image: '☀️', options: ['O', 'A', 'U'] },
@@ -327,7 +336,12 @@ const PRESET_SETS: CardSet[] = [
   }
 ];
 
-type View = 'library' | 'study' | 'editor' | 'congrats';
+type View = 'library' | 'study' | 'editor' | 'congrats' | 'pop-words';
+
+interface GameScore {
+  score: number;
+  timestamp: number;
+}
 
 export default function App() {
   const [view, setView] = useState<View>('library');
@@ -348,8 +362,29 @@ export default function App() {
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const [isLoading, setIsLoading] = useState(true);
+  const [highScores, setHighScores] = useState<GameScore[]>([]);
+  const [popWordsState, setPopWordsState] = useState<{
+    score: number;
+    timeLeft: number;
+    currentCard: Flashcard | null;
+    currentCategory: string;
+    feedbackType: 'none' | 'correct' | 'wrong';
+    floatingEmojis: { id: number; emoji: string; x: number; y: number; vx: number; vy: number; isCorrect: boolean }[];
+  }>({
+    score: 0,
+    timeLeft: 30,
+    currentCard: null,
+    currentCategory: '',
+    feedbackType: 'none',
+    floatingEmojis: []
+  });
+
+  const gameTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const gameLoopRef = useRef<number | null>(null);
 
   useEffect(() => {
+    const savedScores = localStorage.getItem('abakada_high_scores');
+    if (savedScores) setHighScores(JSON.parse(savedScores));
     // Initial loading / splash duration
     const splashTimer = setTimeout(() => {
       setIsLoading(false);
@@ -537,6 +572,10 @@ export default function App() {
   };
 
   const handleStartStudy = (set: CardSet) => {
+    if (set.id === 'pop-words-game') {
+      startPopWords();
+      return;
+    }
     let finalCards = [...set.cards];
     
     // Dynamic ABAKADA generation if it's the specific preset
@@ -550,6 +589,161 @@ export default function App() {
     setCurrentIndex(0);
     setIsRevealed(false);
     setView('study');
+  };
+
+  const startPopWords = () => {
+    const intermediateSets = PRESET_SETS.filter(s => s.tier === 'Intermediate' && !s.isChallenge);
+    const allCards = intermediateSets.flatMap(s => s.cards).filter(c => c.image && c.syllable);
+    
+    if (allCards.length === 0) return;
+
+    setPopWordsState({
+      score: 0,
+      timeLeft: 30,
+      currentCard: null,
+      currentCategory: '',
+      feedbackType: 'none',
+      floatingEmojis: []
+    });
+    setView('pop-words');
+    generateNextRound(allCards);
+
+    if (gameTimerRef.current) clearInterval(gameTimerRef.current);
+    gameTimerRef.current = setInterval(() => {
+      setPopWordsState(prev => {
+        if (prev.timeLeft <= 0) {
+          clearInterval(gameTimerRef.current!);
+          return prev;
+        }
+        return { ...prev, timeLeft: Math.max(0, prev.timeLeft - 1) };
+      });
+    }, 1000);
+  };
+
+  const generateNextRound = (cardsSource?: Flashcard[]) => {
+    const intermediateSets = PRESET_SETS.filter(s => s.tier === 'Intermediate' && !s.isChallenge);
+    const source = cardsSource || intermediateSets.flatMap(s => s.cards).filter(c => c.image);
+    
+    // Find the category (set name)
+    const randomSet = intermediateSets[Math.floor(Math.random() * intermediateSets.length)];
+    const correctCard = randomSet.cards[Math.floor(Math.random() * randomSet.cards.length)];
+    
+    const count = 4 + Math.floor(Math.random() * 2); // 4-5 emojis
+    const wrongCards = source.filter(c => c.image !== correctCard.image);
+    const selectedWrongs = [];
+    for (let i = 0; i < count - 1; i++) {
+       selectedWrongs.push(wrongCards[Math.floor(Math.random() * wrongCards.length)]);
+    }
+
+    const emojis = [correctCard, ...selectedWrongs].map((c, i) => ({
+      id: Date.now() + i,
+      emoji: c.image!,
+      isCorrect: c.image === correctCard.image,
+      x: 20 + Math.random() * 60, 
+      y: 20 + Math.random() * 60,
+      vx: (Math.random() - 0.5) * 0.4,
+      vy: (Math.random() - 0.5) * 0.4
+    }));
+
+    setPopWordsState(prev => ({
+      ...prev,
+      currentCard: correctCard,
+      currentCategory: randomSet.name,
+      feedbackType: 'none',
+      floatingEmojis: emojis
+    }));
+  };
+
+  useEffect(() => {
+    if (view === 'pop-words' && popWordsState.timeLeft > 0) {
+      const moveEmojis = () => {
+        setPopWordsState(prev => {
+          const newList = prev.floatingEmojis.map(e => {
+            let nx = e.x + e.vx;
+            let ny = e.y + e.vy;
+            let nvx = e.vx;
+            let nvy = e.vy;
+
+            // Bounce off edges
+            if (nx < 10 || nx > 90) nvx *= -1;
+            if (ny < 15 || ny > 85) nvy *= -1;
+
+            return { ...e, x: nx, y: ny, vx: nvx, vy: nvy };
+          });
+
+          // Simple Circle Collision (physics bump)
+          const radius = 18; // Increased from 10 to 18 for larger emojis (~18% of screen)
+          for (let i = 0; i < newList.length; i++) {
+            for (let j = i + 1; j < newList.length; j++) {
+              const dx = newList[i].x - newList[j].x;
+              const dy = newList[i].y - newList[j].y;
+              const dist = Math.sqrt(dx * dx + dy * dy);
+
+              if (dist < radius) {
+                // Collide! Swap some velocity
+                const tempVx = newList[i].vx;
+                const tempVy = newList[i].vy;
+                newList[i].vx = newList[j].vx;
+                newList[i].vy = newList[j].vy;
+                newList[j].vx = tempVx;
+                newList[j].vy = tempVy;
+
+                // Move them apart so they don't stick
+                const push = (radius - dist) / 2;
+                const ux = dx / dist;
+                const uy = dy / dist;
+                newList[i].x += ux * push;
+                newList[i].y += uy * push;
+                newList[j].x -= ux * push;
+                newList[j].y -= uy * push;
+              }
+            }
+          }
+
+          return { ...prev, floatingEmojis: newList };
+        });
+        gameLoopRef.current = requestAnimationFrame(moveEmojis);
+      };
+      gameLoopRef.current = requestAnimationFrame(moveEmojis);
+      return () => {
+        if (gameLoopRef.current) cancelAnimationFrame(gameLoopRef.current);
+      };
+    } else if (view === 'pop-words' && popWordsState.timeLeft <= 0) {
+       // Game over
+       saveHighScore(popWordsState.score);
+       setView('congrats');
+    }
+  }, [view, popWordsState.timeLeft === 0]);
+
+  const saveHighScore = (score: number) => {
+    const newScore = { score, timestamp: Date.now() };
+    const saved = localStorage.getItem('abakada_high_scores');
+    const existing = saved ? JSON.parse(saved) : [];
+    const updated = [newScore, ...existing].sort((a, b) => b.score - a.score).slice(0, 5);
+    setHighScores(updated);
+    localStorage.setItem('abakada_high_scores', JSON.stringify(updated));
+  };
+
+  const handleEmojiPop = (id: number, isCorrect: boolean) => {
+    if (isCorrect) {
+      setPopWordsState(prev => ({
+        ...prev,
+        score: prev.score + 10,
+        timeLeft: prev.timeLeft + 3,
+        feedbackType: 'correct'
+      }));
+      // Small pause before next
+      setTimeout(() => generateNextRound(), 300);
+    } else {
+      setPopWordsState(prev => ({
+        ...prev,
+        timeLeft: Math.max(0, prev.timeLeft - 5),
+        floatingEmojis: prev.floatingEmojis.filter(e => e.id !== id),
+        feedbackType: 'wrong'
+      }));
+      if ('vibrate' in navigator) navigator.vibrate(200);
+      setTimeout(() => setPopWordsState(prev => ({ ...prev, feedbackType: 'none' })), 300);
+    }
   };
 
   const updateAbakadaVowel = (vowel: string) => {
@@ -732,13 +926,13 @@ export default function App() {
             </header>
 
             <main className="flex-1 overflow-y-auto px-6 pb-24 space-y-8">
-              {['Beginner', 'Intermediate', 'Expert'].map(tier => {
+              {['Beginner', 'Intermediate', 'Expert', 'Challenge'].map(tier => {
                 const tierSets = PRESET_SETS.filter(set => set.tier === tier);
                 if (tierSets.length === 0) return null;
                 return (
-                  <section key={tier}>
-                    <h2 className="text-lg font-black text-on-surface mb-4 flex items-center gap-2">
-                      <Star size={20} className={tier === 'Beginner' ? 'text-yellow-500 fill-yellow-500' : tier === 'Intermediate' ? 'text-orange-500 fill-orange-500' : 'text-red-500 fill-red-500'} />
+                  <section key={tier} className={tier === 'Challenge' ? 'bg-primary/5 -mx-6 px-6 py-6 rounded-t-[40px] border-t-4 border-primary/10' : ''}>
+                    <h2 className={`text-lg font-black mb-4 flex items-center gap-2 ${tier === 'Challenge' ? 'text-primary' : 'text-on-surface'}`}>
+                      <Star size={20} className={tier === 'Beginner' ? 'text-yellow-500 fill-yellow-500' : tier === 'Intermediate' ? 'text-orange-500 fill-orange-500' : tier === 'Challenge' ? 'text-primary fill-primary' : 'text-red-500 fill-red-500'} />
                       {tier}
                     </h2>
                     
@@ -759,48 +953,73 @@ export default function App() {
                       </div>
                     )}
 
-                    <div className="grid gap-3">
-                      {tierSets.filter(s => !s.isChallenge).map((set) => (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                      {(tier === 'Challenge' ? tierSets.filter(s => s.isChallenge) : tierSets.filter(s => !s.isChallenge)).map((set) => (
                         <button
                           key={set.id}
                           onClick={() => handleStartStudy(set)}
-                          className="w-full p-5 bg-surface-container-lowest border-4 border-surface-variant rounded-2xl flex items-center justify-between chunky-shadow-card active-press group"
+                          className={`flex flex-col items-center justify-between p-4 border-4 rounded-[28px] chunky-shadow-card active-press group min-h-[160px] ${tier === 'Challenge' ? 'bg-white border-primary/20' : 'bg-surface-container-lowest border-surface-variant'}`}
                         >
-                          <div className="flex items-center gap-4">
-                            <div className="h-12 w-12 rounded-xl bg-secondary-fixed flex items-center justify-center text-on-secondary-container">
-                              <BookOpen size={24} />
-                            </div>
-                            <div className="text-left">
-                              <h3 className="font-bold text-xl">{set.name}</h3>
-                              <p className="text-on-surface-variant text-sm font-semibold">{set.cards.length} Cards</p>
-                            </div>
+                          <div className={`h-16 w-16 rounded-2xl flex items-center justify-center mb-2 ${tier === 'Challenge' ? 'bg-primary/10 text-primary' : 'bg-secondary-fixed text-on-secondary-container'}`}>
+                            {tier === 'Challenge' ? <Trophy size={32} /> : <BookOpen size={32} />}
                           </div>
-                          <div className="h-10 w-10 flex items-center justify-center rounded-lg bg-surface-container group-hover:bg-tertiary-container transition-colors">
-                            <Play size={20} className="text-on-surface group-hover:text-on-tertiary-container" />
+                          
+                          <div className="flex-1 flex flex-col items-center justify-center">
+                            <h3 className="font-black text-lg leading-tight text-on-surface line-clamp-2">{set.name}</h3>
+                            <p className="text-on-surface-variant text-xs font-bold uppercase tracking-wider mt-1">{set.cards.length} Cards</p>
+                          </div>
+                          
+                          <div className="mt-2 w-full h-10 flex items-center justify-center rounded-xl bg-surface-container group-hover:bg-tertiary-container transition-colors">
+                            <Play size={18} className="text-on-surface group-hover:text-on-tertiary-container" />
                           </div>
                         </button>
                       ))}
                     </div>
 
-                    {tier === 'Intermediate' && tierSets.some(s => s.isChallenge) && (
+                    {tier === 'Challenge' && tierSets.some(s => s.isGame) && (
                       <div className="mt-8">
                         <h3 className="text-sm font-black text-on-surface-variant mb-4 flex items-center gap-2 uppercase tracking-widest px-2">
-                          <Trophy size={16} className="text-tertiary" /> Challenge
+                          <Play size={16} className="text-tertiary" /> Games
                         </h3>
                         <div className="grid grid-cols-2 gap-3">
-                          {tierSets.filter(s => s.isChallenge).map((set) => (
+                          {tierSets.filter(s => s.isGame).map((set) => (
                             <button
                               key={set.id}
                               onClick={() => handleStartStudy(set)}
-                              className="p-4 bg-tertiary-container/30 border-4 border-tertiary-fixed-dim rounded-2xl flex flex-col items-center justify-center gap-2 chunky-shadow-secondary active-press group text-center"
+                              className="p-5 bg-tertiary text-on-tertiary border-4 border-tertiary-fixed-dim rounded-2xl flex flex-col items-center justify-center gap-3 chunky-shadow-secondary active-press group text-center"
                             >
-                              <div className="h-10 w-10 rounded-xl bg-tertiary-container flex items-center justify-center text-on-tertiary-container">
-                                <Star size={20} />
+                              <div className="h-14 w-14 rounded-2xl bg-white/20 flex items-center justify-center text-white">
+                                <Trophy size={32} />
                               </div>
-                              <h4 className="font-bold text-sm leading-tight">{set.name}</h4>
+                              <div>
+                                <h4 className="font-black text-lg leading-tight">{set.name}</h4>
+                                <div className="mt-2 flex items-center justify-center gap-1 opacity-80">
+                                   <Star size={12} fill="currentColor" />
+                                   <span className="text-xs font-bold">Pop emojis!</span>
+                                </div>
+                              </div>
                             </button>
                           ))}
                         </div>
+
+                        {highScores.length > 0 && (
+                          <div className="mt-8 px-4 py-6 bg-white/50 rounded-3xl border-2 border-dashed border-primary/20">
+                            <h4 className="text-xs font-black text-primary uppercase tracking-[0.2em] mb-4 text-center">🏆 Leaderboard</h4>
+                            <div className="space-y-2">
+                              {highScores.map((s, i) => (
+                                <div key={s.timestamp} className="flex justify-between items-center text-sm">
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-black text-primary/40 w-4">#{i+1}</span>
+                                    <span className="font-bold text-on-surface-variant">
+                                      {new Date(s.timestamp).toLocaleDateString()}
+                                    </span>
+                                  </div>
+                                  <span className="font-black text-primary text-base">{s.score} pts</span>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
                       </div>
                     )}
                   </section>
@@ -815,50 +1034,49 @@ export default function App() {
                   </h2>
                 </div>
                 
-                <div className="grid gap-3">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
                   {userSets.map((set) => (
-                    <div key={set.id} className="relative">
+                    <div key={set.id} className="relative group">
                        <button
                         onClick={() => handleStartStudy(set)}
-                        className="w-full p-5 bg-surface-container-lowest border-4 border-surface-variant rounded-2xl flex items-center justify-between chunky-shadow-card active-press pr-24"
+                        className="w-full min-h-[160px] p-4 bg-surface-container-lowest border-4 border-surface-variant rounded-[28px] flex flex-col items-center justify-between chunky-shadow-card active-press"
                       >
-                         <div className="flex items-center gap-4">
-                          <div className="h-12 w-12 rounded-xl bg-tertiary-fixed flex items-center justify-center text-on-tertiary-container">
-                            <ArrowRight size={24} />
-                          </div>
-                          <div className="text-left">
-                            <h3 className="font-bold text-xl truncate max-w-[120px]">{set.name}</h3>
-                            <p className="text-on-surface-variant text-sm font-semibold">{set.cards.length} Cards</p>
-                          </div>
-                        </div>
+                         <div className="h-16 w-16 rounded-2xl bg-tertiary-fixed flex items-center justify-center text-on-tertiary-container mb-2">
+                           <ArrowRight size={32} />
+                         </div>
+                         <div className="flex-1 flex flex-col items-center justify-center text-center">
+                           <h3 className="font-black text-lg leading-tight text-on-surface line-clamp-2">{set.name}</h3>
+                           <p className="text-on-surface-variant text-xs font-bold uppercase tracking-wider mt-1">{set.cards.length} Cards</p>
+                         </div>
+                         <div className="w-full h-8" /> {/* Space for actions overlay */}
                       </button>
                       
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 flex gap-2">
+                      <div className="absolute bottom-4 left-4 right-4 flex gap-2">
                         <button 
                           onClick={(e) => { e.stopPropagation(); handleEditSet(set); }}
-                          className="h-10 w-10 bg-surface-container rounded-lg flex items-center justify-center hover:bg-secondary-fixed active-press"
+                          className="flex-1 h-10 bg-surface-container rounded-xl flex items-center justify-center hover:bg-secondary-fixed active-press border-2 border-surface-variant/50"
                         >
                           <Edit3 size={18} />
                         </button>
                         {confirmDeleteId === set.id ? (
-                          <div className="flex gap-1">
+                          <div className="flex-[2] flex gap-1">
                             <button 
                               onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(null); }}
-                              className="px-2 h-10 bg-surface-variant text-on-surface-variant rounded-lg flex items-center justify-center font-bold text-sm"
+                              className="flex-1 h-10 bg-surface-variant text-on-surface-variant rounded-xl flex items-center justify-center font-black text-[10px] uppercase"
                             >
-                              Cancel
+                              No
                             </button>
                             <button 
                               onClick={(e) => { e.stopPropagation(); confirmDelete(); }}
-                              className="px-2 h-10 bg-error text-white rounded-lg flex items-center justify-center font-bold text-sm"
+                              className="flex-1 h-10 bg-error text-white rounded-xl flex items-center justify-center font-black text-[10px] uppercase"
                             >
-                              Delete
+                              Del
                             </button>
                           </div>
                         ) : (
                           <button 
                             onClick={(e) => { e.stopPropagation(); handleDeleteSet(set.id); }}
-                            className="h-10 w-10 bg-surface-container rounded-lg flex items-center justify-center hover:bg-error-container text-on-surface hover:text-on-error-container active-press"
+                            className="flex-1 h-10 bg-surface-container rounded-xl flex items-center justify-center hover:bg-error-container text-on-surface hover:text-on-error-container active-press border-2 border-surface-variant/50"
                           >
                             <Trash2 size={18} />
                           </button>
@@ -869,10 +1087,10 @@ export default function App() {
 
                   <button 
                     onClick={handleCreateNew}
-                    className="w-full p-6 border-4 border-dashed border-surface-variant rounded-2xl flex flex-col items-center justify-center gap-2 hover:bg-surface-container-lowest hover:border-tertiary transition-all"
+                    className="min-h-[160px] p-6 border-4 border-dashed border-surface-variant rounded-[28px] flex flex-col items-center justify-center gap-2 hover:bg-surface-container-lowest hover:border-tertiary transition-all group"
                   >
-                    <Plus size={32} className="text-tertiary" />
-                    <span className="font-bold text-on-surface-variant">Create New Set</span>
+                    <Plus size={40} className="text-tertiary" />
+                    <span className="font-black text-on-surface-variant uppercase tracking-widest text-xs">New Set</span>
                   </button>
                 </div>
               </section>
@@ -1139,6 +1357,96 @@ export default function App() {
           </motion.div>
         )}
 
+        {view === 'pop-words' && (
+          <motion.div 
+            key="pop-words"
+            initial={{ opacity: 0 }}
+            animate={{ 
+              opacity: 1,
+              backgroundColor: popWordsState.feedbackType === 'correct' ? '#4ade80' : popWordsState.feedbackType === 'wrong' ? '#f87171' : '#6750A4'
+            }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="flex-1 flex flex-col h-full overflow-hidden"
+          >
+            <header className="px-6 py-4 flex justify-between items-center text-white z-30">
+              <button 
+                onClick={() => { setView('library'); if (gameTimerRef.current) clearInterval(gameTimerRef.current); }}
+                className="h-10 w-10 flex items-center justify-center rounded-full bg-white/20 active-press"
+              >
+                <X size={20} />
+              </button>
+              <div className="flex flex-col items-center">
+                <span className="text-xs font-black uppercase tracking-widest opacity-70">Score</span>
+                <span className="text-3xl font-black">{popWordsState.score}</span>
+              </div>
+              <div className={`flex flex-col items-center h-16 w-16 justify-center rounded-full border-4 border-white/30 ${popWordsState.timeLeft < 10 ? 'bg-error animate-pulse' : 'bg-white/20'}`}>
+                <span className="text-xs font-black uppercase tracking-tight">Time</span>
+                <span className="text-xl font-black">{popWordsState.timeLeft}s</span>
+              </div>
+            </header>
+
+            <main className="flex-1 relative overflow-hidden">
+               <div className="absolute inset-x-0 top-12 flex flex-col items-center z-10 px-6 text-center">
+                  <motion.div
+                    key={popWordsState.currentCategory + popWordsState.currentCard?.syllable}
+                    initial={{ y: -20, opacity: 0 }}
+                    animate={{ y: 0, opacity: 1 }}
+                    className="flex flex-col items-center"
+                  >
+                    <span className="text-white/60 text-sm font-black uppercase tracking-[0.3em] mb-1">
+                      {popWordsState.currentCategory}
+                    </span>
+                    <h1 className="text-6xl sm:text-9xl font-black text-white drop-shadow-[0_8px_0_rgba(0,0,0,0.2)] tracking-tighter leading-tight">
+                      {popWordsState.currentCard?.syllable}
+                    </h1>
+                  </motion.div>
+               </div>
+
+               <div className="absolute inset-0 z-20">
+                  <AnimatePresence mode="popLayout">
+                    {popWordsState.floatingEmojis.map(e => (
+                      <motion.button
+                        key={e.id}
+                        initial={{ scale: 0, opacity: 0 }}
+                        animate={{ 
+                          scale: 1,
+                          opacity: 1,
+                          left: `${e.x}%`,
+                          top: `${e.y}%`
+                        }}
+                        exit={{ 
+                          scale: 2.5, 
+                          opacity: 0,
+                          transition: { duration: 0.2 }
+                        }}
+                        onClick={() => handleEmojiPop(e.id, e.isCorrect)}
+                        className="absolute h-32 w-32 sm:h-48 sm:w-48 flex items-center justify-center text-8xl sm:text-[10rem] cursor-pointer active:scale-125 transition-transform"
+                        style={{ transform: 'translate(-50%, -50%)' }}
+                      >
+                         <motion.div 
+                            animate={{ 
+                              y: [0, -15, 0],
+                              scale: [1, 1.1, 1],
+                              rotate: [0, 5, -5, 0]
+                            }} 
+                            transition={{ 
+                              duration: 2 + Math.random(), 
+                              repeat: Infinity,
+                              ease: "easeInOut"
+                            }}
+                            className="drop-shadow-[0_20px_20px_rgba(0,0,0,0.5)]"
+                          >
+                            {e.emoji}
+                          </motion.div>
+                      </motion.button>
+                    ))}
+                  </AnimatePresence>
+               </div>
+            </main>
+          </motion.div>
+        )}
+
         {view === 'congrats' && (
           <motion.div 
             key="congrats"
@@ -1184,17 +1492,40 @@ export default function App() {
               </motion.div>
             </motion.div>
 
-            <h1 className="text-5xl font-black text-yellow-500 mb-4 tracking-tight z-10 drop-shadow-sm">Amazing!</h1>
-            <p className="text-2xl font-bold text-on-surface-variant mb-12 z-10">
-              You finished the <span className="text-secondary">{activeSet.name}</span> set!
-            </p>
+            <h1 className="text-5xl font-black text-yellow-500 mb-4 tracking-tight z-10 drop-shadow-sm">
+              {view === 'pop-words' || activeSet.id === 'pop-words-game' ? 'Game Over!' : 'Amazing!'}
+            </h1>
+            
+            <div className="mt-4 flex flex-col items-center gap-2 z-10">
+              {view === 'pop-words' || activeSet.id === 'pop-words-game' ? (
+                <>
+                  <span className="text-on-surface-variant font-bold text-lg uppercase tracking-widest opacity-60">Final Score</span>
+                  <span className="text-7xl font-black text-primary tracking-tighter">{popWordsState.score}</span>
+                  <div className="mt-6 px-10 py-3 bg-primary/10 rounded-full font-black text-primary text-xl border-4 border-primary/20">
+                    {popWordsState.score > 200 ? 'LEGENDARY!' : popWordsState.score > 100 ? 'AWESOME!' : popWordsState.score > 50 ? 'GREAT JOB!' : 'GOOD TRY!'}
+                  </div>
+                </>
+              ) : (
+                <p className="text-2xl font-bold text-on-surface-variant mb-4">
+                  You finished the <span className="text-secondary">{activeSet.name}</span> set!
+                </p>
+              )}
+            </div>
 
-            <div className="w-full max-w-[400px] space-y-4 z-10">
+            <div className="w-full max-w-[400px] space-y-4 z-10 mt-12">
               <button 
-                onClick={() => { setView('study'); setCurrentIndex(0); setIsRevealed(false); }}
-                className="w-full h-18 bg-tertiary-container text-on-tertiary-container border-4 border-tertiary-fixed-dim rounded-2xl font-bold text-2xl active-press chunky-shadow-secondary hover:brightness-105"
+                onClick={() => { 
+                  if (activeSet.id === 'pop-words-game') {
+                    startPopWords();
+                  } else {
+                    handleStartStudy(activeSet);
+                    setCurrentIndex(0); 
+                    setIsRevealed(false); 
+                  }
+                }}
+                className="w-full h-18 bg-tertiary-container text-on-tertiary-container border-4 border-tertiary-fixed-dim rounded-2xl font-black text-2xl active-press chunky-shadow-secondary hover:brightness-105"
               >
-                Try Again
+                {activeSet.id === 'pop-words-game' ? 'Play Again' : 'Try Again'}
               </button>
               <button 
                 onClick={() => setView('library')}
